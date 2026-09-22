@@ -45,6 +45,106 @@
   }
 
   // -------------------------------------------------------------------------
+  // Modal
+  // -------------------------------------------------------------------------
+  // Para los dos momentos en que una linea de texto en el flujo no alcanza:
+  // cuando el alistamiento queda registrado, y cuando la placa elegida ya se
+  // alisto hoy. Los dos exigen que el conductor pare y lea.
+  //
+  // Se construye en el DOM al vuelo en vez de venir en cada HTML: asi los dos
+  // formularios lo tienen sin repetir el marcado, y no hay un div escondido
+  // esperando en paginas que no lo usan.
+  //
+  // Sin boton de cerrar en la esquina a proposito. Las acciones son
+  // explicitas: registrar otro, elegir otra placa, cerrar. Una X invita a
+  // descartar sin leer, que es justo lo que no interesa aqui.
+
+  let modalAbierto = null;
+
+  function modal({ tipo, titulo, mensaje, datos, acciones }) {
+    cerrarModal();
+
+    const fondo = document.createElement("div");
+    fondo.className = "modal-fondo";
+
+    const caja = document.createElement("div");
+    caja.className = "modal";
+    caja.setAttribute("role", "dialog");
+    caja.setAttribute("aria-modal", "true");
+    caja.setAttribute("aria-labelledby", "modal-titulo");
+
+    const icono = document.createElement("div");
+    icono.className = "modal-icono";
+    icono.dataset.tipo = tipo || "bien";
+    icono.setAttribute("aria-hidden", "true");
+    icono.textContent = tipo === "aviso" ? "!" : tipo === "error" ? "×" : "✓";
+
+    const h = document.createElement("h2");
+    h.id = "modal-titulo";
+    h.className = "modal-titulo";
+    h.textContent = titulo || "";
+
+    caja.append(icono, h);
+
+    if (mensaje) {
+      const p = document.createElement("p");
+      p.className = "modal-mensaje";
+      p.textContent = mensaje;
+      caja.appendChild(p);
+    }
+
+    // Los datos van en una lista de definiciones y no en un parrafo: el
+    // conductor los usa como comprobante, y a veces les hace foto.
+    if (datos && datos.length) {
+      const dl = document.createElement("dl");
+      dl.className = "modal-datos";
+      for (const [clave, valor] of datos) {
+        if (valor === null || valor === undefined || valor === "") continue;
+        const dt = document.createElement("dt");
+        dt.textContent = clave;
+        const dd = document.createElement("dd");
+        dd.textContent = String(valor);
+        dl.append(dt, dd);
+      }
+      if (dl.children.length) caja.appendChild(dl);
+    }
+
+    const pie = document.createElement("div");
+    pie.className = "modal-acciones";
+    for (const acc of acciones || []) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = acc.primario ? "primario ancho" : "discreto ancho";
+      b.textContent = acc.texto;
+      b.addEventListener("click", () => {
+        if (typeof acc.alTocar === "function") acc.alTocar();
+      });
+      pie.appendChild(b);
+    }
+    if (pie.children.length) caja.appendChild(pie);
+
+    fondo.appendChild(caja);
+    document.body.appendChild(fondo);
+    modalAbierto = fondo;
+
+    // Que el fondo no se desplace mientras el modal esta abierto.
+    document.body.style.overflow = "hidden";
+    // El foco al primer boton: quien navega con teclado o lector de pantalla
+    // aterriza en la accion, no al principio de la pagina.
+    pie.querySelector("button")?.focus();
+
+    return fondo;
+  }
+
+  function cerrarModal() {
+    if (modalAbierto) {
+      modalAbierto.remove();
+      modalAbierto = null;
+    }
+    document.body.style.overflow = "";
+  }
+
+  // -------------------------------------------------------------------------
   // Limpieza de datos
   // -------------------------------------------------------------------------
 
@@ -220,6 +320,8 @@
     $,
     mostrarAviso,
     ocultarAviso,
+    modal,
+    cerrarModal,
     soloDigitos,
     nombreLimpio,
     hayConexion: () => navigator.onLine,

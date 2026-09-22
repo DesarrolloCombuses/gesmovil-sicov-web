@@ -18,6 +18,9 @@
     // Lo ya resuelto por /conductor, para no repetir la consulta mientras el
     // conductor corrige un digito y vuelve atras.
     nombresVistos: new Map(),
+    // placa -> interno, para que el comprobante diga "EQR790 · interno 717".
+    // El conductor reconoce su bus por el interno, no por la placa.
+    internos: new Map(),
     enviando: false,
     enviado: false,
   };
@@ -48,6 +51,7 @@
 
       const selPlaca = $("placa");
       for (const v of datos.vehiculos) {
+        if (v.interno) estado.internos.set(v.placa, v.interno);
         const op = document.createElement("option");
         op.value = v.placa;
         op.textContent = v.interno ? `${v.placa} — interno ${v.interno}` : v.placa;
@@ -304,6 +308,29 @@
     pista.textContent = texto;
   }
 
+  /**
+   * Instante en hora de Colombia.
+   *
+   * Se fija la zona en vez de usar la del telefono: el comprobante tiene que
+   * decir la misma hora que quedo en el registro y que vera el regulador. Un
+   * telefono con la zona mal puesta mostraria otra, y el conductor creeria que
+   * se guardo a una hora distinta de la real.
+   */
+  function fechaHoraCol(iso) {
+    if (!iso) return null;
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    return d.toLocaleString("es-CO", {
+      timeZone: "America/Bogota",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+
   // El campo del nombre no se escribe a mano: lo llena la nomina o queda
   // vacio. Un conductor inactivo, o que no este en la nomina, no puede
   // alistar, asi que no tiene sentido dejarle teclear un nombre que el
@@ -327,11 +354,34 @@
       const resp = await fetch(RUTA + "/hoy?placa=" + encodeURIComponent(placa));
       const datos = await resp.json();
       if (datos.yaRegistrado) {
-        mostrarAviso(
-          `La placa ${placa} ya tiene alistamiento de hoy` +
-            (datos.registro?.conductor ? ` (${datos.registro.conductor})` : "") + ".",
-          "info",
-        );
+        // Modal y no una linea de aviso: esto le ahorra llenar 40 puntos para
+        // que el servidor se lo rechace al final con un 409. Tiene que verlo.
+        const r = datos.registro || {};
+        window.SICOV.modal({
+          tipo: "aviso",
+          titulo: "Este vehículo ya se alistó hoy",
+          mensaje:
+            "Solo se registra un alistamiento por vehículo y por día. Si hay que corregir algo " +
+            "del que ya está, se corrige ese registro; no se crea otro.",
+          datos: [
+            ["Vehículo", placa],
+            ["Lo registró", r.conductor],
+            ["Fecha y hora", fechaHoraCol(r.registrado_en)],
+          ],
+          acciones: [
+            {
+              texto: "Elegir otro vehículo",
+              primario: true,
+              alTocar: () => {
+                // Se limpia la placa: dejarla elegida invita a seguir llenando
+                // un formulario que no se va a poder enviar.
+                $("placa").value = "";
+                window.SICOV.cerrarModal();
+                $("placa").focus();
+              },
+            },
+          ],
+        });
       }
     } catch {
       // Es una comprobacion de cortesia y necesita red. Si falla, el servidor
@@ -405,36 +455,53 @@
 
       estado.enviado = true;
 
-      // Se reemplaza la pantalla: si el formulario siguiera ahi, un segundo
-      // toque en Registrar intentaria duplicar el alistamiento del dia.
-      const novedad =
-        datos.alistamiento?.estado === "CON_NOVEDAD"
-          ? " Quedó marcado con novedad: repórtalo al taller."
-          : "";
+      const reg = datos.alistamiento || {};
+      const conNovedad = reg.estado === "CON_NOVEDAD";
+      const fallas = [...estado.marcas.values()].filter((v) => v === "mal").length;
+      const interno = estado.internos.get(placa);
 
+      // Se vacia la pantalla detras: si el formulario siguiera ahi, cerrar el
+      // modal dejaria a la vista un Registrar que intentaria duplicar el
+      // alistamiento del dia.
       const envoltura = document.querySelector(".envoltura");
       envoltura.innerHTML = "";
-
       const cab = document.createElement("header");
       const h = document.createElement("h1");
       h.textContent = "Alistamiento registrado";
       cab.appendChild(h);
-
-      const bien = document.createElement("div");
-      bien.className = "aviso bien";
-      bien.textContent = `Placa ${placa}, ${nombre}.${novedad}`;
-
-      const panel = document.createElement("div");
-      panel.className = "panel";
       const p = document.createElement("p");
       p.className = "sub";
-      p.style.margin = "0";
-      p.textContent = "Ya puedes cerrar esta página.";
-      panel.appendChild(p);
-
-      envoltura.append(cab, bien, panel);
+      p.textContent = `Placa ${placa} · ${fechaHoraCol(reg.registrado_en)}`;
+      cab.appendChild(p);
+      envoltura.appendChild(cab);
       $("barra").hidden = true;
       window.scrollTo(0, 0);
+
+      window.SICOV.modal({
+        tipo: conNovedad ? "aviso" : "bien",
+        titulo: conNovedad ? "Registrado con novedad" : "Alistamiento registrado",
+        mensaje: conNovedad
+          ? `Quedó guardado, pero con ${fallas} punto(s) marcados como falla. Repórtalo al taller antes de salir.`
+          : "Quedó guardado y disponible para el reporte a la Superintendencia.",
+        datos: [
+          ["Consecutivo", reg.id ? `N° ${reg.id}` : null],
+          ["Vehículo", interno ? `${placa} · interno ${interno}` : placa],
+          ["Conductor", nombre],
+          ["Fecha y hora", fechaHoraCol(reg.registrado_en)],
+          ["Puntos verificados", `${estado.marcas.size} de ${estado.actividades.length}`],
+          ["Novedades", fallas > 0 ? `${fallas}` : "Ninguna"],
+        ],
+        acciones: [
+          {
+            texto: "Registrar otro vehículo",
+            primario: true,
+            // Recarga en vez de limpiar campos a mano: asi vuelve a pedir la
+            // flota y el checklist, y no arrastra nada del anterior.
+            alTocar: () => location.reload(),
+          },
+          { texto: "Cerrar", alTocar: () => window.SICOV.cerrarModal() },
+        ],
+      });
     } catch (e) {
       estado.enviando = false;
       $("enviar").textContent = "Registrar";

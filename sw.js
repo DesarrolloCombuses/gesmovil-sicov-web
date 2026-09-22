@@ -41,6 +41,10 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.4.0 -- modal de comprobante al registrar, y modal de aviso cuando la placa
+// elegida ya se alisto hoy (antes era una linea de texto en el flujo, facil de
+// pasar por alto despues de llenar 40 puntos).
+//
 // 1.3.0 -- fuera el modo oscuro (no convencia sobre el fondo negro), el nombre
 // del conductor pasa a ser de solo lectura porque lo pone la nomina, y el
 // formulario solo ofrece las placas de las rutas del SICOV.
@@ -56,7 +60,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.3.0";
+const VERSION = "1.4.0";
 
 const CACHE = `sicov-v${VERSION}`;
 

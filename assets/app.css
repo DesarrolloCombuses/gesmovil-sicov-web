@@ -405,6 +405,83 @@ button.discreto {
   flex-shrink: 0;
 }
 
+/* --- Modal ---
+   Para los dos momentos que exigen que el conductor pare y lea: el
+   alistamiento quedo registrado, o la placa que eligio ya se alisto hoy. */
+.modal-fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(16, 24, 34, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* En un telefono bajo, con el teclado abierto o con el modal largo, tiene
+     que poder desplazarse. De ahi el overflow y el padding de seguridad. */
+  overflow-y: auto;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) 16px
+           calc(20px + env(safe-area-inset-bottom, 0px));
+  animation: modal-aparece .16s ease-out;
+}
+@keyframes modal-aparece { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  background: var(--panel);
+  border-radius: var(--radio);
+  padding: 28px 22px 22px;
+  box-shadow: 0 12px 40px rgba(16, 24, 34, 0.25);
+  text-align: center;
+  animation: modal-sube .2s ease-out;
+}
+@keyframes modal-sube {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.modal-icono {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 32px/1 system-ui, sans-serif;
+}
+.modal-icono[data-tipo="bien"]  { background: var(--ok-suave);     color: var(--ok); }
+.modal-icono[data-tipo="aviso"] { background: #fff4e0;             color: #8a5a00; }
+.modal-icono[data-tipo="error"] { background: var(--mal-suave);    color: var(--mal); }
+
+.modal-titulo { margin: 0 0 8px; font-size: 1.28rem; font-weight: 700; letter-spacing: -0.015em; }
+.modal-mensaje { margin: 0; color: var(--suave); font-size: 0.94rem; line-height: 1.5; }
+
+/* Comprobante. A veces le hacen foto, asi que se lee de un vistazo y los
+   valores van alineados a la derecha, no corridos dentro de un parrafo. */
+.modal-datos {
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  background: var(--fondo);
+  border: 1px solid var(--linea);
+  border-radius: var(--radio-chico);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 9px 16px;
+  text-align: left;
+  font-size: 0.9rem;
+}
+.modal-datos dt { color: var(--suave); }
+.modal-datos dd { margin: 0; text-align: right; font-weight: 600; word-break: break-word; }
+
+.modal-acciones { margin-top: 22px; display: grid; gap: 10px; }
+.modal-acciones button { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-fondo, .modal { animation: none; }
+}
+
 /* --- Avisos --- */
 .aviso {
   padding: 14px 16px;
