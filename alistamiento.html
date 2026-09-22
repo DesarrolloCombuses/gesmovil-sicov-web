@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Alistamiento diario — SICOV</title>
+<meta name="description" content="Verificación previa a la operación del vehículo.">
+<meta name="theme-color" content="#1a4fa0">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icono-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./assets/icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SICOV">
+<link rel="stylesheet" href="./assets/app.css">
+</head>
+<body>
+
+<div class="cinta" id="cinta-version" hidden></div>
+<div class="cinta" id="cinta-conexion" hidden></div>
+
+<div class="envoltura">
+  <header>
+    <div>
+      <h1>Alistamiento diario</h1>
+      <p class="sub">Verificación previa a la operación del vehículo</p>
+    </div>
+  </header>
+
+  <div id="cargando" class="cargando">Cargando…</div>
+  <div id="aviso" class="aviso error" hidden></div>
+
+  <form id="formulario" hidden>
+    <div class="panel">
+      <h2>Vehículo y conductor</h2>
+
+      <label>
+        <span class="etiqueta">Placa</span>
+        <select id="placa" required>
+          <option value="">Selecciona el vehículo…</option>
+        </select>
+      </label>
+
+      <label>
+        <span class="etiqueta">Cédula del conductor</span>
+        <input id="cedula" type="text" inputmode="numeric" autocomplete="off"
+               list="conductores" required placeholder="Sin puntos ni espacios">
+        <datalist id="conductores"></datalist>
+        <span class="pista" id="pista-conductor"></span>
+      </label>
+
+      <label>
+        <span class="etiqueta">Nombre del conductor</span>
+        <input id="nombre" type="text" autocomplete="off" required placeholder="Nombre completo">
+      </label>
+
+      <label>
+        <span class="etiqueta">Kilometraje <span class="pista enlinea">(opcional)</span></span>
+        <input id="kilometraje" type="text" inputmode="numeric" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="panel">
+      <h2>Verificación</h2>
+      <p class="sub nota">
+        Marca cada punto: <strong>OK</strong> si está bien, <strong>Falla</strong> si encontraste una novedad.
+      </p>
+      <div id="checklist"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Observaciones</h2>
+      <label>
+        <textarea id="observaciones" placeholder="Algo más que deba quedar registrado (opcional)"></textarea>
+      </label>
+    </div>
+  </form>
+
+  <p class="pie">SICOV · <span id="version">…</span></p>
+</div>
+
+<div class="barra" id="barra" hidden>
+  <div class="barra-interna">
+    <span class="progreso" id="progreso"></span>
+    <button type="button" class="primario" id="enviar" disabled>Registrar</button>
+  </div>
+</div>
+
+<!-- comun.js primero: registra el service worker y define window.SICOV, del
+     que depende el resto. Los dos son clasicos (no modulos) para que se
+     ejecuten en orden sin defer. -->
+<script src="./assets/comun.js"></script>
+<script src="./assets/alistamiento.js"></script>
+</body>
+</html>

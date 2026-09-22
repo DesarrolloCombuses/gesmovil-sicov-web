@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SICOV — Alistamientos y mantenimientos</title>
+<meta name="description" content="Registro de alistamientos diarios y mantenimientos de la flota.">
+<meta name="theme-color" content="#1a4fa0">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icono-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./assets/icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SICOV">
+<link rel="stylesheet" href="./assets/app.css">
+<style>
+  /* La portada no lleva barra fija de envio, asi que recupera el hueco que el
+     padding del body reserva para ella. */
+  body { padding-bottom: calc(env(safe-area-inset-bottom, 0) + 24px); }
+</style>
+</head>
+<body>
+
+<div class="cinta" id="cinta-version" hidden></div>
+<div class="cinta" id="cinta-conexion" hidden></div>
+
+<div class="envoltura">
+  <header>
+    <div>
+      <h1>SICOV</h1>
+      <p class="sub">Alistamientos y mantenimientos de la flota</p>
+    </div>
+  </header>
+
+  <div id="aviso" class="aviso error" hidden></div>
+
+  <div class="opciones">
+    <a class="opcion" href="./alistamiento.html">
+      <strong>Alistamiento diario</strong>
+      <span>Verificación previa a la operación del vehículo. No necesita usuario.</span>
+    </a>
+    <a class="opcion" href="./mantenimiento.html">
+      <strong>Registrar mantenimiento</strong>
+      <span>Trabajos ejecutados sobre la flota. Requiere iniciar sesión.</span>
+    </a>
+  </div>
+
+  <div class="panel" id="panel-instalar" hidden style="margin-top:14px">
+    <h2>Instalar la app</h2>
+    <p class="sub nota">
+      Se agrega a la pantalla de inicio y abre sin buscar el enlace, incluso sin señal.
+    </p>
+    <button type="button" class="primario ancho" id="instalar">Instalar</button>
+  </div>
+
+  <p class="pie">SICOV · <span id="version">…</span></p>
+</div>
+
+<script src="./assets/comun.js"></script>
+<script>
+// El navegador avisa cuando la app se puede instalar, y solo entonces: el
+// boton no se muestra si ya esta instalada o si el navegador no lo soporta,
+// para no ofrecer algo que no va a funcionar.
+let peticionInstalar = null;
+
+window.addEventListener("beforeinstallprompt", (ev) => {
+  // Se evita el banner propio del navegador para ofrecerlo dentro de la
+  // pagina, donde se puede explicar para que sirve.
+  ev.preventDefault();
+  peticionInstalar = ev;
+  document.getElementById("panel-instalar").hidden = false;
+});
+
+document.getElementById("instalar").addEventListener("click", async () => {
+  if (!peticionInstalar) return;
+  peticionInstalar.prompt();
+  await peticionInstalar.userChoice;
+  // El evento sirve una sola vez: si lo rechaza, el navegador lo volvera a
+  // ofrecer mas adelante por su cuenta.
+  peticionInstalar = null;
+  document.getElementById("panel-instalar").hidden = true;
+});
+
+window.addEventListener("appinstalled", () => {
+  document.getElementById("panel-instalar").hidden = true;
+});
+</script>
+</body>
+</html>

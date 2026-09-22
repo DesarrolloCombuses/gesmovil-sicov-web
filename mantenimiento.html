@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mantenimientos — SICOV</title>
+<meta name="description" content="Registro de trabajos ejecutados sobre la flota.">
+<meta name="theme-color" content="#1a4fa0">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./assets/icono-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="./assets/icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SICOV">
+<link rel="stylesheet" href="./assets/app.css">
+</head>
+<body>
+
+<div class="cinta" id="cinta-version" hidden></div>
+<div class="cinta" id="cinta-conexion" hidden></div>
+
+<div class="envoltura">
+  <header>
+    <div>
+      <h1>Mantenimientos</h1>
+      <p class="sub" id="subtitulo">Trabajos ejecutados sobre la flota</p>
+    </div>
+    <button type="button" class="discreto" id="salir" hidden>Salir</button>
+  </header>
+
+  <div id="aviso" class="aviso error" hidden></div>
+  <div id="cargando" class="cargando" hidden>Cargando…</div>
+
+  <form id="login" class="panel" hidden>
+    <h2>Ingresa con tu cuenta</h2>
+    <label>
+      <span class="etiqueta">Correo</span>
+      <input id="correo" type="email" autocomplete="username" required>
+    </label>
+    <label>
+      <span class="etiqueta">Contraseña</span>
+      <input id="clave" type="password" autocomplete="current-password" required>
+    </label>
+    <button type="submit" class="primario ancho" id="entrar">Entrar</button>
+  </form>
+
+  <form id="formulario" hidden>
+    <div class="panel">
+      <h2>Vehículo y momento</h2>
+
+      <label>
+        <span class="etiqueta">Placa</span>
+        <select id="placa" required>
+          <option value="">Selecciona el vehículo…</option>
+        </select>
+      </label>
+
+      <div class="par">
+        <label>
+          <span class="etiqueta">Fecha del trabajo</span>
+          <input id="fecha" type="date" required>
+        </label>
+        <label>
+          <span class="etiqueta">Hora</span>
+          <input id="hora" type="time" required>
+        </label>
+      </div>
+
+      <label>
+        <span class="etiqueta">Kilometraje <span class="pista enlinea">(opcional)</span></span>
+        <input id="kilometraje" type="text" inputmode="numeric" autocomplete="off">
+      </label>
+    </div>
+
+    <div class="panel">
+      <h2>Tipo de mantenimiento</h2>
+      <div class="tipos" id="tipos" role="group" aria-label="Tipo de mantenimiento"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Actividades realizadas</h2>
+      <p class="sub nota">Marca las del catálogo oficial y añade abajo lo que no esté cubierto.</p>
+      <div id="checklist"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Detalle y observaciones</h2>
+      <label>
+        <span class="etiqueta">Detalle del trabajo</span>
+        <textarea id="detalleLibre" placeholder="Lo que el catálogo no cubra"></textarea>
+        <span class="pista">Si no marcaste ninguna actividad, este detalle es obligatorio.</span>
+      </label>
+      <label>
+        <span class="etiqueta">Observaciones <span class="pista enlinea">(opcional)</span></span>
+        <textarea id="observaciones"></textarea>
+      </label>
+    </div>
+
+    <div class="panel" id="panel-responsable" hidden>
+      <h2>Responsable del trabajo</h2>
+      <p class="sub nota">Por defecto eres tú. Si lo ejecutó otra persona, indícala aquí.</p>
+      <div class="par">
+        <label>
+          <span class="etiqueta">Cédula</span>
+          <input id="respCedula" type="text" inputmode="numeric" autocomplete="off">
+        </label>
+        <label>
+          <span class="etiqueta">Nombre</span>
+          <input id="respNombre" type="text" autocomplete="off">
+        </label>
+      </div>
+    </div>
+  </form>
+
+  <p class="pie">SICOV · <span id="version">…</span></p>
+</div>
+
+<div class="barra" id="barra" hidden>
+  <div class="barra-interna">
+    <span class="progreso" id="progreso"></span>
+    <button type="button" class="primario" id="enviar">Registrar</button>
+  </div>
+</div>
+
+<!-- comun.js es clasico y va primero: define window.SICOV y registra el
+     service worker. mantenimiento.js es modulo porque importa supabase-js
+     para el login, y los modulos siempre se aplazan, asi que SICOV ya existe
+     cuando corre. -->
+<script src="./assets/comun.js"></script>
+<script type="module" src="./assets/mantenimiento.js" id="script-mant"></script>
+<script>
+// supabase-js viene de un CDN, que el service worker no guarda: es de otro
+// origen y no forma parte del shell. Sin red el modulo no carga, y sin este
+// aviso la pagina se quedaria en blanco sin explicar nada.
+//
+// No es una carencia que valga la pena tapar guardando el CDN: el login
+// necesita red de todos modos, asi que esta pantalla no puede funcionar sin
+// conexion. El alistamiento, que si puede, no usa ningun CDN por eso mismo.
+document.getElementById("script-mant").addEventListener("error", function () {
+  var aviso = document.getElementById("aviso");
+  var cargando = document.getElementById("cargando");
+  if (cargando) cargando.hidden = true;
+  if (!aviso) return;
+  aviso.className = "aviso info";
+  aviso.textContent = navigator.onLine
+    ? "No se pudo cargar la librería de inicio de sesión. Reintenta en un momento."
+    : "Sin conexión: el registro de mantenimientos necesita señal para iniciar sesión.";
+  aviso.hidden = false;
+});
+</script>
+</body>
+</html>

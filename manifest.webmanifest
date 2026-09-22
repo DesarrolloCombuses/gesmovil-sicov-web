@@ -1,0 +1,49 @@
+{
+  "name": "SICOV — Alistamientos y mantenimientos",
+  "short_name": "SICOV",
+  "description": "Registro de alistamientos diarios y mantenimientos de la flota.",
+  "lang": "es-CO",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#1a4fa0",
+  "icons": [
+    {
+      "src": "./assets/icono-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icono-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./assets/icono-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Alistamiento diario",
+      "short_name": "Alistar",
+      "description": "Verificación previa a la operación del vehículo",
+      "url": "./alistamiento.html",
+      "icons": [{ "src": "./assets/icono-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Registrar mantenimiento",
+      "short_name": "Mantenimiento",
+      "description": "Trabajos ejecutados sobre la flota",
+      "url": "./mantenimiento.html",
+      "icons": [{ "src": "./assets/icono-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
