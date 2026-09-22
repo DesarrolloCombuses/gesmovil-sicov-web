@@ -106,14 +106,33 @@
     for (const act of estado.actividades) {
       if (act.grupo && act.grupo !== grupoActual) {
         grupoActual = act.grupo;
-        const t = document.createElement("div");
-        t.className = "grupo-titulo";
-        t.textContent = act.grupo;
-        cont.appendChild(t);
+
+        const cab = document.createElement("div");
+        cab.className = "grupo";
+
+        const nombre = document.createElement("span");
+        nombre.className = "grupo-nombre";
+        nombre.textContent = act.grupo;
+
+        // Contador por grupo. Con 40 puntos en 9 bloques, "cuanto me falta de
+        // este" no se responde contando a ojo.
+        const cuenta = document.createElement("span");
+        cuenta.className = "grupo-cuenta";
+        cuenta.dataset.cuenta = act.grupo;
+
+        cab.append(nombre, cuenta);
+        cont.appendChild(cab);
       }
 
+      const tarjeta = document.createElement("div");
+      tarjeta.className = "item";
+      tarjeta.dataset.grupo = act.grupo || "";
+
+      // El texto y el switch van juntos en una fila propia, y la tarjeta es un
+      // grid de una columna. Antes la tarjeta ERA la fila, asi que el campo de
+      // observacion entraba como tercera columna y encimaba el texto.
       const fila = document.createElement("div");
-      fila.className = "item";
+      fila.className = "item-fila";
 
       const texto = document.createElement("div");
       texto.className = "item-texto";
@@ -125,37 +144,49 @@
       sw.setAttribute("role", "group");
       sw.setAttribute("aria-labelledby", texto.id);
 
-      for (const [valor, rotulo] of [["ok", "OK"], ["mal", "Falla"]]) {
+      for (const [valor, rotulo, glifo] of [["ok", "OK", "✓"], ["mal", "Falla", "!"]]) {
         const b = document.createElement("button");
         b.type = "button";
         b.dataset.valor = valor;
-        b.textContent = rotulo;
         b.setAttribute("aria-pressed", "false");
-        b.addEventListener("click", () => marcar(act.id, valor, sw, fila));
+        // El glifo ademas del rotulo: a contraluz se distingue antes una forma
+        // que una palabra. Va en un span aparte para poder darle su tamano.
+        const g = document.createElement("span");
+        g.className = "glifo";
+        g.setAttribute("aria-hidden", "true");
+        g.textContent = glifo;
+        b.append(g, document.createTextNode(rotulo));
+        b.addEventListener("click", () => marcar(act.id, valor, sw, tarjeta));
         sw.appendChild(b);
       }
 
       fila.append(texto, sw);
-      cont.appendChild(fila);
+      tarjeta.appendChild(fila);
+      cont.appendChild(tarjeta);
     }
+
+    actualizarProgreso();
   }
 
-  function marcar(id, valor, sw, fila) {
+  function marcar(id, valor, sw, tarjeta) {
     estado.marcas.set(id, valor);
     for (const b of sw.querySelectorAll("button")) {
       b.setAttribute("aria-pressed", String(b.dataset.valor === valor));
     }
+    // Tiñe la tarjeta entera, no solo el boton: al bajar por la lista se ve de
+    // un vistazo que quedo resuelto y que no.
+    tarjeta.dataset.estado = valor;
 
     // Una falla pide decir cual: "algo esta mal" sin detalle no le sirve ni al
     // taller ni al reporte.
-    let obs = fila.querySelector(".item-obs");
+    let obs = tarjeta.querySelector(".item-obs");
     if (valor === "mal" && !obs) {
       obs = document.createElement("input");
       obs.type = "text";
       obs.className = "item-obs";
       obs.placeholder = "¿Qué encontraste? (opcional)";
       obs.dataset.obs = String(id);
-      fila.appendChild(obs);
+      tarjeta.appendChild(obs);
     } else if (valor === "ok" && obs) {
       obs.remove();
     }
@@ -168,9 +199,36 @@
     const hechas = estado.marcas.size;
     const fallas = [...estado.marcas.values()].filter((v) => v === "mal").length;
 
-    let txt = `<strong>${hechas}</strong> de ${total} verificados`;
-    if (fallas) txt += ` · ${fallas} con falla`;
-    $("progreso").innerHTML = txt;
+    // Se arma con nodos, no con innerHTML: las descripciones y los rotulos
+    // vienen de la base, y aqui no hace falta interpretar HTML para nada.
+    const t = $("progreso-texto");
+    t.textContent = "";
+    const n = document.createElement("strong");
+    n.textContent = String(hechas);
+    t.append(n, document.createTextNode(` de ${total} verificados`));
+    if (fallas) {
+      const f = document.createElement("span");
+      f.className = "fallas";
+      f.textContent = `${fallas} con falla`;
+      t.append(document.createTextNode(" · "), f);
+    }
+
+    const lleno = $("progreso-lleno");
+    lleno.style.width = total ? `${Math.round((hechas / total) * 100)}%` : "0%";
+    // Verde solo al completarse: mientras falte algo sigue siendo azul, para
+    // que el color no diga "listo" antes de tiempo.
+    if (total > 0 && hechas === total) lleno.dataset.lleno = "si";
+    else delete lleno.dataset.lleno;
+
+    // Contadores por grupo.
+    for (const chip of document.querySelectorAll("[data-cuenta]")) {
+      const grupo = chip.dataset.cuenta;
+      const delGrupo = estado.actividades.filter((a) => (a.grupo || "") === grupo);
+      const marcadas = delGrupo.filter((a) => estado.marcas.has(a.id)).length;
+      chip.textContent = `${marcadas}/${delGrupo.length}`;
+      if (delGrupo.length > 0 && marcadas === delGrupo.length) chip.dataset.completo = "si";
+      else delete chip.dataset.completo;
+    }
 
     $("enviar").disabled = estado.enviando || total === 0 || hechas < total;
   }

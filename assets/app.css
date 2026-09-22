@@ -9,22 +9,89 @@
    Mobile-first sin media queries para crecer: el formulario se llena de pie
    junto al vehiculo, en un telefono. El escritorio solo necesita que la
    columna no se estire, y eso lo resuelve un max-width.
+
+   DOS COSAS MANDAN EN ESTE DISENO, y no son esteticas:
+
+   1. Se usa a pleno sol y a las 4 de la manana. De ahi que los estados
+      marcados sean rellenos de color con texto blanco, y no fondos tenidos con
+      texto de color: un tinte claro desaparece bajo el sol directo. Y de ahi
+      el modo oscuro, que a esa hora no es un lujo.
+
+   2. Se toca con una mano, de pie, a veces con guantes. Ningun objetivo
+      tactil baja de 48px.
+
+   Lo marcado RECEDE y lo pendiente resalta: un item ya verificado se tine y
+   baja de contraste, mientras los que faltan siguen en blanco. Asi el ojo va
+   solo a lo que queda, que es la pregunta que el conductor se hace al bajar
+   la lista.
 --------------------------------------------------------------------------- */
 
 :root {
   --tinta: #16202c;
   --suave: #5b6b7d;
-  --linea: #dfe5ec;
-  --fondo: #f4f6f9;
+  --tenue: #93a1b2;
+  --linea: #e3e8ef;
+  --linea-fuerte: #cdd6e0;
+  --fondo: #f1f4f8;
   --panel: #ffffff;
-  --ok: #1c7a4a;
-  --ok-suave: #e8f5ee;
+  --campo: #ffffff;
+
+  --ok: #16794a;
+  --ok-claro: #1f9a5e;
+  --ok-suave: #e9f6ef;
+  --ok-borde: #a8ddc1;
+
   --mal: #b3261e;
-  --mal-suave: #fdecea;
+  --mal-claro: #d13a30;
+  --mal-suave: #fdedeb;
+  --mal-borde: #f2b9b4;
+
   --acento: #1a4fa0;
+  --acento-claro: #2a66c4;
   --acento-suave: #eaf1fb;
-  --radio: 12px;
+  --acento-borde: #bed3f0;
+
+  --radio: 14px;
+  --radio-chico: 10px;
+  --sombra: 0 1px 2px rgba(22, 32, 44, 0.04), 0 4px 12px rgba(22, 32, 44, 0.05);
+  --sombra-barra: 0 -2px 16px rgba(22, 32, 44, 0.10);
+
   color-scheme: light;
+}
+
+/* El turno arranca de noche. Se redefinen solo los tokens: ninguna regla de
+   abajo sabe en que modo esta. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tinta: #e8edf4;
+    --suave: #9aa8ba;
+    --tenue: #6b7a8d;
+    --linea: #2a3542;
+    --linea-fuerte: #3a4757;
+    --fondo: #0f151c;
+    --panel: #18202a;
+    --campo: #1e2833;
+
+    --ok: #3fbd7d;
+    --ok-claro: #2f9d64;
+    --ok-suave: #14301f;
+    --ok-borde: #2c6444;
+
+    --mal: #f28b83;
+    --mal-claro: #d4483c;
+    --mal-suave: #331715;
+    --mal-borde: #6b2b25;
+
+    --acento: #6ba3f5;
+    --acento-claro: #3d7fd8;
+    --acento-suave: #16243a;
+    --acento-borde: #2d4a75;
+
+    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
+    --sombra-barra: 0 -2px 16px rgba(0, 0, 0, 0.4);
+
+    color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -34,185 +101,334 @@ body {
   /* El padding inferior deja sitio a la barra fija de envio, y el
      safe-area-inset evita que el boton quede bajo la barra del sistema en los
      telefonos con notch. */
-  padding: env(safe-area-inset-top, 0) 0 calc(env(safe-area-inset-bottom, 0) + 96px);
+  padding: env(safe-area-inset-top, 0) 0 calc(env(safe-area-inset-bottom, 0) + 108px);
   background: var(--fondo);
   color: var(--tinta);
   font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-text-size-adjust: 100%;
   /* La app instalada no debe dar el efecto de rebote de una pagina web. */
   overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .envoltura { max-width: 660px; margin: 0 auto; padding: 16px; }
 
 /* --- Cabecera --- */
-header { padding: 8px 0 20px; display: flex; align-items: flex-start; gap: 12px; }
+header { padding: 10px 0 22px; display: flex; align-items: flex-start; gap: 12px; }
 header > div { flex: 1; min-width: 0; }
-h1 { margin: 0 0 4px; font-size: 1.45rem; letter-spacing: -0.01em; }
-.sub { margin: 0; color: var(--suave); font-size: 0.95rem; }
+h1 {
+  margin: 0 0 4px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+}
+.sub { margin: 0; color: var(--suave); font-size: 0.94rem; }
 
 /* --- Paneles --- */
 .panel {
   background: var(--panel);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
-  padding: 16px;
+  padding: 18px;
   margin-bottom: 14px;
+  box-shadow: var(--sombra);
 }
 .panel h2 {
-  margin: 0 0 14px;
-  font-size: 0.8rem;
+  margin: 0 0 16px;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   color: var(--suave);
-  font-weight: 600;
+  font-weight: 700;
 }
-.panel .nota { margin: -6px 0 14px; }
+.panel .nota { margin: -8px 0 16px; font-size: 0.9rem; }
 
 /* --- Campos --- */
-label { display: block; margin-bottom: 14px; }
+label { display: block; margin-bottom: 16px; }
 label:last-child { margin-bottom: 0; }
-.etiqueta { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; }
-.pista { display: block; font-size: 0.82rem; color: var(--suave); font-weight: 400; margin-top: 4px; }
-.pista.enlinea { display: inline; margin: 0; }
+.etiqueta { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 7px; }
+.pista { display: block; font-size: 0.82rem; color: var(--suave); font-weight: 400; margin-top: 6px; }
+.pista.enlinea { display: inline; margin: 0; font-weight: 400; }
+.pista.bien { color: var(--ok); font-weight: 600; }
 
 input, select, textarea {
   width: 100%;
   /* Hereda los 16px del body a proposito: por debajo de 16px, iOS hace zoom
      al enfocar el campo y descoloca el formulario. */
   font: inherit;
-  padding: 12px;
-  border: 1px solid var(--linea);
-  border-radius: 9px;
-  background: #fff;
+  padding: 13px 14px;
+  min-height: 50px;
+  border: 1.5px solid var(--linea-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
   color: inherit;
+  transition: border-color .15s, box-shadow .15s;
 }
+input::placeholder, textarea::placeholder { color: var(--tenue); }
 input:focus-visible, select:focus-visible, textarea:focus-visible {
-  outline: 2px solid var(--acento);
-  outline-offset: 1px;
+  outline: none;
   border-color: var(--acento);
+  box-shadow: 0 0 0 3px var(--acento-suave);
 }
-textarea { min-height: 80px; resize: vertical; }
+textarea { min-height: 88px; resize: vertical; line-height: 1.5; }
+
+/* La flecha del select se dibuja con dos gradientes en vez de una imagen:
+   hereda el color del tema y no cuesta una peticion mas. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 40px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--suave) 50%),
+                    linear-gradient(135deg, var(--suave) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(50% + 2px), calc(100% - 15px) calc(50% + 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
 
 .par { display: flex; gap: 12px; }
 .par > label { flex: 1; min-width: 0; }
 @media (max-width: 420px) { .par { flex-direction: column; gap: 0; } }
 
 /* --- Grupos del checklist --- */
-.grupo-titulo {
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--suave);
-  font-weight: 700;
-  margin: 18px 0 8px;
-  padding-top: 12px;
-  border-top: 1px solid var(--linea);
-}
-.grupo-titulo:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
-
-/* --- Item con OK / Falla --- */
-.item {
+.grupo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--linea);
+  gap: 10px;
+  margin: 22px 0 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--linea);
 }
-.item:last-child { border-bottom: 0; }
-.item-texto { flex: 1; min-width: 0; font-size: 0.95rem; }
-.item-obs { margin-top: 8px; }
+.grupo:first-of-type { margin-top: 0; padding-top: 0; border-top: 0; }
+.grupo-nombre {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--suave);
+  font-weight: 700;
+}
 
-.switch { display: flex; gap: 6px; flex-shrink: 0; }
-.switch button {
-  /* 44px de alto minimo: es el objetivo tactil que se acierta sin precision,
-     con el telefono en una mano y de pie junto al vehiculo. */
-  min-width: 46px;
-  min-height: 44px;
-  padding: 0 10px;
-  font: 600 0.85rem/1 system-ui, sans-serif;
+/* Contador por grupo: dice cuanto falta de ESTE bloque sin tener que contar a
+   ojo. Se pone verde solo cuando el grupo esta completo. */
+.grupo-cuenta {
+  flex-shrink: 0;
+  font: 700 0.75rem/1 system-ui, sans-serif;
+  padding: 6px 10px;
+  border-radius: 99px;
+  background: var(--fondo);
+  border: 1px solid var(--linea);
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+}
+.grupo-cuenta[data-completo="si"] {
+  background: var(--ok-suave);
+  border-color: var(--ok-borde);
+  color: var(--ok);
+}
+
+/* --- Item del checklist ---
+   GRID de una columna, no flex de una fila. El campo de observacion se anade
+   como segundo hijo cuando se marca Falla, y con flex se metia como tercera
+   columna: aplastaba el texto y lo encimaba con el switch. Con grid cae en su
+   propia fila, a todo el ancho, que es donde se puede escribir. */
+.item {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
   border: 1.5px solid var(--linea);
-  border-radius: 9px;
-  background: #fff;
+  border-radius: var(--radio-chico);
+  background: var(--panel);
+  transition: background-color .15s, border-color .15s;
+}
+.item:last-child { margin-bottom: 0; }
+
+.item-fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.item-texto {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.97rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* Lo ya resuelto recede para que resalte lo que falta. */
+.item[data-estado="ok"] {
+  background: var(--ok-suave);
+  border-color: var(--ok-borde);
+}
+.item[data-estado="ok"] .item-texto { color: var(--suave); font-weight: 400; }
+.item[data-estado="mal"] {
+  background: var(--mal-suave);
+  border-color: var(--mal-borde);
+}
+
+.item-obs {
+  /* Ocupa la fila entera del grid. Sin esto volveria a competir por el ancho
+     con el texto y el switch. */
+  grid-column: 1 / -1;
+  min-height: 48px;
+  font-size: 0.94rem;
+}
+
+/* --- El switch OK / Falla ---
+   Relleno solido con texto blanco al marcar, no un tinte claro: el tinte se
+   pierde con el telefono a pleno sol, que es cuando mas se usa. */
+.switch { display: flex; gap: 8px; flex-shrink: 0; }
+.switch button {
+  /* 48px de lado minimo: es el objetivo tactil que se acierta sin precision,
+     con el telefono en una mano y de pie junto al vehiculo. */
+  min-width: 64px;
+  min-height: 48px;
+  padding: 0 12px;
+  font: 700 0.85rem/1 system-ui, sans-serif;
+  border: 1.5px solid var(--linea-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
   color: var(--suave);
   cursor: pointer;
+  transition: background-color .12s, border-color .12s, color .12s, opacity .12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
 }
+.switch button:active { transform: scale(0.96); }
+.switch .glifo { font-size: 1rem; line-height: 1; }
+
 .switch button[aria-pressed="true"][data-valor="ok"] {
-  background: var(--ok-suave); border-color: var(--ok); color: var(--ok);
+  background: var(--ok-claro);
+  border-color: var(--ok-claro);
+  color: #fff;
 }
 .switch button[aria-pressed="true"][data-valor="mal"] {
-  background: var(--mal-suave); border-color: var(--mal); color: var(--mal);
+  background: var(--mal-claro);
+  border-color: var(--mal-claro);
+  color: #fff;
+}
+
+/* El no elegido se apaga, para que de un vistazo se lea cual quedo. */
+.item[data-estado] .switch button[aria-pressed="false"] {
+  opacity: 0.4;
+  border-color: var(--linea);
 }
 
 /* --- Casillas (mantenimiento) --- */
 .check {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  margin: 0;
-  border-bottom: 1px solid var(--linea);
+  gap: 14px;
+  padding: 14px;
+  margin: 0 0 8px;
+  border: 1.5px solid var(--linea);
+  border-radius: var(--radio-chico);
+  background: var(--panel);
   cursor: pointer;
+  transition: background-color .15s, border-color .15s;
 }
-.check:last-child { border-bottom: 0; }
+.check:last-child { margin-bottom: 0; }
+.check:has(input:checked) {
+  background: var(--acento-suave);
+  border-color: var(--acento-borde);
+}
 .check input {
-  width: 22px; height: 22px;
+  width: 24px; height: 24px;
   flex-shrink: 0;
-  accent-color: var(--acento);
+  accent-color: var(--acento-claro);
   cursor: pointer;
 }
-.check span { flex: 1; font-size: 0.95rem; }
+.check span { flex: 1; font-size: 0.96rem; font-weight: 500; }
 
 /* --- Selector de tipo --- */
 .tipos { display: flex; gap: 10px; }
 .tipos button {
   flex: 1;
-  min-height: 52px;
+  min-height: 56px;
   padding: 10px;
   font: 600 0.95rem/1.3 system-ui, sans-serif;
-  border: 1.5px solid var(--linea);
-  border-radius: 10px;
-  background: #fff;
+  border: 1.5px solid var(--linea-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
   color: var(--suave);
   cursor: pointer;
+  transition: background-color .12s, border-color .12s, color .12s;
 }
 .tipos button[aria-pressed="true"] {
-  background: var(--acento-suave); border-color: var(--acento); color: var(--acento);
+  background: var(--acento-claro);
+  border-color: var(--acento-claro);
+  color: #fff;
 }
 
 /* --- Barra fija de envio --- */
 .barra {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  background: rgba(255, 255, 255, 0.97);
+  background: var(--panel);
   border-top: 1px solid var(--linea);
+  box-shadow: var(--sombra-barra);
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
 }
-.barra-interna { max-width: 660px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
-.progreso { flex: 1; font-size: 0.88rem; color: var(--suave); }
-.progreso strong { color: var(--tinta); }
+.barra-interna {
+  max-width: 660px; margin: 0 auto;
+  display: flex; align-items: center; gap: 14px;
+}
+.progreso { flex: 1; min-width: 0; }
+.progreso-texto { font-size: 0.85rem; color: var(--suave); margin-bottom: 7px; }
+/* Mantenimiento usa el texto sin riel debajo, asi que no necesita el hueco. */
+.progreso.progreso-texto { margin-bottom: 0; }
+.progreso-texto strong { color: var(--tinta); font-variant-numeric: tabular-nums; }
+.progreso-texto .fallas { color: var(--mal); font-weight: 600; }
+
+/* Barra visual ademas del numero: al bajar por 40 puntos, "cuanto me queda"
+   se responde mejor con una longitud que leyendo una cifra. */
+.progreso-riel {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--linea);
+  overflow: hidden;
+}
+.progreso-lleno {
+  height: 100%;
+  width: 0;
+  border-radius: 99px;
+  background: var(--acento-claro);
+  transition: width .2s ease-out;
+}
+.progreso-lleno[data-lleno="si"] { background: var(--ok-claro); }
 
 /* --- Botones --- */
 button.primario {
-  font: 600 1rem/1 system-ui, sans-serif;
-  padding: 14px 22px;
-  min-height: 48px;
+  font: 700 1rem/1 system-ui, sans-serif;
+  padding: 15px 24px;
+  min-height: 52px;
   border: 0;
-  border-radius: 10px;
-  background: var(--acento);
+  border-radius: var(--radio-chico);
+  background: var(--acento-claro);
   color: #fff;
   cursor: pointer;
+  flex-shrink: 0;
+  transition: background-color .12s, opacity .12s;
 }
-button.primario:disabled { background: #a9b4c2; cursor: not-allowed; }
+button.primario:active { transform: scale(0.98); }
+button.primario:disabled {
+  background: var(--linea-fuerte);
+  color: var(--tenue);
+  cursor: not-allowed;
+}
 button.primario.ancho { width: 100%; }
 
 button.discreto {
-  font: 500 0.88rem/1 system-ui, sans-serif;
-  padding: 9px 12px;
-  min-height: 40px;
-  border: 1px solid var(--linea);
-  border-radius: 8px;
-  background: #fff;
+  font: 600 0.88rem/1 system-ui, sans-serif;
+  padding: 11px 14px;
+  min-height: 44px;
+  border: 1.5px solid var(--linea-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
   color: var(--suave);
   cursor: pointer;
   flex-shrink: 0;
@@ -220,17 +436,18 @@ button.discreto {
 
 /* --- Avisos --- */
 .aviso {
-  padding: 12px 14px;
-  border-radius: 9px;
+  padding: 14px 16px;
+  border-radius: var(--radio-chico);
   margin-bottom: 14px;
   font-size: 0.92rem;
-  border: 1px solid;
+  border: 1.5px solid;
+  line-height: 1.45;
 }
-.aviso.error { background: var(--mal-suave); border-color: #f0b4b0; color: #7d1a15; }
-.aviso.info  { background: var(--acento-suave); border-color: #c3d6f2; color: #14356e; }
-.aviso.bien  { background: var(--ok-suave); border-color: #b3ddc5; color: #125633; }
+.aviso.error { background: var(--mal-suave); border-color: var(--mal-borde); color: var(--mal); }
+.aviso.info  { background: var(--acento-suave); border-color: var(--acento-borde); color: var(--acento); }
+.aviso.bien  { background: var(--ok-suave); border-color: var(--ok-borde); color: var(--ok); }
 
-.cargando { padding: 40px 0; text-align: center; color: var(--suave); }
+.cargando { padding: 48px 0; text-align: center; color: var(--suave); }
 
 /* --- Estado de conexion y version ---
    Una cinta fija arriba, no un aviso en el flujo: el conductor tiene que poder
@@ -240,42 +457,57 @@ button.discreto {
   position: sticky;
   top: 0;
   z-index: 10;
-  padding: 9px 16px calc(9px + 0px);
-  padding-top: calc(9px + env(safe-area-inset-top, 0px));
+  padding: 10px 16px;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
   font: 600 0.85rem/1.3 system-ui, sans-serif;
   text-align: center;
 }
 .cinta.sinred { background: #4a3a10; color: #ffe9b0; }
-.cinta.nueva  { background: var(--acento); color: #fff; display: flex; align-items: center; gap: 10px; justify-content: center; }
+.cinta.nueva  { background: var(--acento-claro); color: #fff; display: flex; align-items: center; gap: 10px; justify-content: center; }
 .cinta button {
-  font: 600 0.82rem/1 system-ui, sans-serif;
-  padding: 7px 11px;
+  font: 700 0.82rem/1 system-ui, sans-serif;
+  padding: 9px 13px;
+  min-height: 40px;
   border: 0;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.92);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
   color: var(--acento);
   cursor: pointer;
 }
 
 .pie {
-  margin: 20px 0 0;
+  margin: 24px 0 0;
   text-align: center;
   font-size: 0.78rem;
-  color: #93a1b2;
+  color: var(--tenue);
 }
 
 /* --- Selector de la portada --- */
 .opciones { display: grid; gap: 12px; }
 .opcion {
-  display: block;
-  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
   background: var(--panel);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
+  box-shadow: var(--sombra);
   text-decoration: none;
   color: inherit;
+  transition: border-color .15s, transform .12s;
 }
-.opcion strong { display: block; font-size: 1.05rem; margin-bottom: 4px; }
-.opcion span { color: var(--suave); font-size: 0.9rem; }
+.opcion:active { transform: scale(0.99); }
+.opcion > div { flex: 1; min-width: 0; }
+.opcion strong { display: block; font-size: 1.08rem; font-weight: 700; margin-bottom: 5px; }
+.opcion span { color: var(--suave); font-size: 0.9rem; line-height: 1.45; }
+.opcion .flecha { color: var(--tenue); font-size: 1.3rem; flex-shrink: 0; }
+
+/* Quien fija "reducir movimiento" no quiere transiciones, ni aqui ni en
+   ningun otro sitio. */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+  button:active, .opcion:active, button.primario:active { transform: none !important; }
+}
 
 [hidden] { display: none !important; }

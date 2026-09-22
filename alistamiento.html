@@ -61,7 +61,8 @@
     <div class="panel">
       <h2>Verificación</h2>
       <p class="sub nota">
-        Marca cada punto: <strong>OK</strong> si está bien, <strong>Falla</strong> si encontraste una novedad.
+        Marca cada punto: <strong>OK</strong> si está bien, <strong>Falla</strong> si encontraste
+        una novedad. Hay que marcar todos para poder registrar.
       </p>
       <div id="checklist"></div>
     </div>
@@ -79,7 +80,12 @@
 
 <div class="barra" id="barra" hidden>
   <div class="barra-interna">
-    <span class="progreso" id="progreso"></span>
+    <div class="progreso">
+      <div class="progreso-texto" id="progreso-texto" aria-live="polite"></div>
+      <div class="progreso-riel" role="progressbar" aria-label="Puntos verificados">
+        <div class="progreso-lleno" id="progreso-lleno"></div>
+      </div>
+    </div>
     <button type="button" class="primario" id="enviar" disabled>Registrar</button>
   </div>
 </div>

@@ -189,10 +189,13 @@ function pintarChecklist() {
   for (const act of estado.actividades) {
     if (act.grupo && act.grupo !== grupoActual) {
       grupoActual = act.grupo;
-      const t = document.createElement("div");
-      t.className = "grupo-titulo";
-      t.textContent = act.grupo;
-      cont.appendChild(t);
+      const cab = document.createElement("div");
+      cab.className = "grupo";
+      const nombre = document.createElement("span");
+      nombre.className = "grupo-nombre";
+      nombre.textContent = act.grupo;
+      cab.appendChild(nombre);
+      cont.appendChild(cab);
     }
 
     const l = document.createElement("label");
