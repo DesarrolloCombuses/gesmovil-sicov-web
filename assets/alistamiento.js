@@ -15,7 +15,9 @@
   const estado = {
     actividades: [],
     marcas: new Map(),
-    conductores: new Map(),
+    // Lo ya resuelto por /conductor, para no repetir la consulta mientras el
+    // conductor corrige un digito y vuelve atras.
+    nombresVistos: new Map(),
     enviando: false,
     enviado: false,
   };
@@ -52,18 +54,9 @@
         selPlaca.appendChild(op);
       }
 
-      // Los conductores son una ayuda de digitacion, no una restriccion: la
-      // tabla employees esta incompleta para conduccion, asi que el campo
-      // acepta una cedula que no aparezca en la lista.
-      const lista = $("conductores");
-      for (const c of datos.conductores) {
-        if (!c.cedula) continue;
-        estado.conductores.set(c.cedula, nombreLimpio(c.nombre));
-        const op = document.createElement("option");
-        op.value = c.cedula;
-        op.label = c.nombre || c.cedula;
-        lista.appendChild(op);
-      }
+      // Aqui ya no se pinta ninguna lista de conductores: el formulario no
+      // recibe la nomina. El nombre se resuelve de a uno contra la cedula que
+      // el conductor digita.
 
       estado.actividades = datos.actividades || [];
       pintarChecklist();
@@ -186,18 +179,72 @@
   // Ayudas de digitacion
   // -------------------------------------------------------------------------
 
+  // El nombre se pide al servidor de a una cedula. La nomina completa ya no
+  // baja al navegador: son 298 cedulas con nombre y apellido, dato personal
+  // que no tiene por que viajar a un movil para llenar un formulario.
+  //
+  // Se espera a que deje de escribir en vez de consultar por tecla: una cedula
+  // de 10 digitos dispararia cinco consultas inutiles camino de la buena.
+  let relojCedula = null;
+  let consultaVigente = 0;
+
   $("cedula").addEventListener("input", (ev) => {
     const cedula = soloDigitos(ev.target.value);
     ev.target.value = cedula;
-    const nombre = estado.conductores.get(cedula);
     const pista = $("pista-conductor");
+
+    clearTimeout(relojCedula);
+    // Invalida lo que este en vuelo: si corrigio un digito, la respuesta de la
+    // cedula anterior ya no debe escribir nada en el campo del nombre.
+    consultaVigente++;
+
+    if (cedula.length < 6) {
+      pista.textContent = "";
+      return;
+    }
+
+    if (estado.nombresVistos.has(cedula)) {
+      aplicarNombre(estado.nombresVistos.get(cedula), pista);
+      return;
+    }
+
+    pista.textContent = "Buscando…";
+    const mia = consultaVigente;
+
+    relojCedula = setTimeout(async () => {
+      if (!window.SICOV.hayConexion()) {
+        pista.textContent = "Sin conexión: escribe el nombre.";
+        return;
+      }
+      try {
+        const resp = await fetch(RUTA + "/conductor?cedula=" + encodeURIComponent(cedula));
+        const datos = await resp.json();
+        if (mia !== consultaVigente) return;
+
+        if (resp.status === 429) {
+          pista.textContent = "Demasiadas consultas: escribe el nombre.";
+          return;
+        }
+        const nombre = datos.encontrado ? nombreLimpio(datos.nombre) : null;
+        estado.nombresVistos.set(cedula, nombre);
+        aplicarNombre(nombre, pista);
+      } catch {
+        if (mia !== consultaVigente) return;
+        // No se bloquea: que la consulta falle no impide alistar, solo obliga
+        // a escribir el nombre. El servidor lo valida igual al registrar.
+        pista.textContent = "No se pudo verificar: escribe el nombre.";
+      }
+    }, 400);
+  });
+
+  function aplicarNombre(nombre, pista) {
     if (nombre) {
       $("nombre").value = nombre;
       pista.textContent = "Conductor encontrado en la nómina.";
     } else {
-      pista.textContent = cedula.length >= 6 ? "No está en la nómina: escribe el nombre." : "";
+      pista.textContent = "No está en la nómina: escribe el nombre.";
     }
-  });
+  }
 
   // Avisa si la placa ya se alisto hoy, antes de que llene el checklist entero.
   $("placa").addEventListener("change", async (ev) => {

@@ -41,7 +41,12 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
-const VERSION = "1.0.0";
+// 1.1.0 -- el formulario dejo de traer la nomina completa. Subir la version no
+// es solo para repartir el codigo nuevo: al activarse borra los caches
+// 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
+// en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
+// Sin este cambio de version esa copia se quedaria en el telefono.
+const VERSION = "1.1.0";
 
 const CACHE = `sicov-v${VERSION}`;
 
