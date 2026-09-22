@@ -47,9 +47,12 @@
         <span class="pista" id="pista-conductor"></span>
       </label>
 
+      <!-- readonly: el nombre lo pone la nomina, no el conductor. Sirve para
+           que confirme que es el, no para aportar el dato. -->
       <label>
         <span class="etiqueta">Nombre del conductor</span>
-        <input id="nombre" type="text" autocomplete="off" required placeholder="Nombre completo">
+        <input id="nombre" type="text" autocomplete="off" required readonly
+               placeholder="Se completa con la cédula">
       </label>
 
       <label>

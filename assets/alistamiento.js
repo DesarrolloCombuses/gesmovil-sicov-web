@@ -257,7 +257,8 @@
     consultaVigente++;
 
     if (cedula.length < 6) {
-      pista.textContent = "";
+      decirPista(pista, "");
+      $("nombre").value = "";
       return;
     }
 
@@ -266,12 +267,16 @@
       return;
     }
 
-    pista.textContent = "Buscando…";
+    decirPista(pista, "Buscando…");
     const mia = consultaVigente;
 
     relojCedula = setTimeout(async () => {
+      // Sin verificar no hay nombre, y sin nombre el servidor rechaza el
+      // registro. Asi que estos tres casos no dicen "escribe el nombre": no se
+      // puede. Dicen que se siga llenando el checklist, que no se pierde, y
+      // que al volver la señal la cedula se resuelve sola.
       if (!window.SICOV.hayConexion()) {
-        pista.textContent = "Sin conexión: escribe el nombre.";
+        decirPista(pista, "Sin conexión. Sigue llenando el checklist: al volver la señal se verifica.");
         return;
       }
       try {
@@ -280,27 +285,36 @@
         if (mia !== consultaVigente) return;
 
         if (resp.status === 429) {
-          pista.textContent = "Demasiadas consultas: escribe el nombre.";
+          decirPista(pista, "Demasiadas consultas desde esta conexión. Espera unos minutos.");
           return;
         }
-        const nombre = datos.encontrado ? nombreLimpio(datos.nombre) : null;
+        const nombre = datos.habilitado ? nombreLimpio(datos.nombre) : null;
         estado.nombresVistos.set(cedula, nombre);
         aplicarNombre(nombre, pista);
       } catch {
         if (mia !== consultaVigente) return;
-        // No se bloquea: que la consulta falle no impide alistar, solo obliga
-        // a escribir el nombre. El servidor lo valida igual al registrar.
-        pista.textContent = "No se pudo verificar: escribe el nombre.";
+        decirPista(pista, "No se pudo verificar la cédula. Reintenta en un momento.");
       }
     }, 400);
   });
 
+  /** Un solo sitio donde se escribe la pista, para que la clase no se quede pegada. */
+  function decirPista(pista, texto, bien) {
+    pista.className = bien ? "pista bien" : "pista";
+    pista.textContent = texto;
+  }
+
+  // El campo del nombre no se escribe a mano: lo llena la nomina o queda
+  // vacio. Un conductor inactivo, o que no este en la nomina, no puede
+  // alistar, asi que no tiene sentido dejarle teclear un nombre que el
+  // servidor va a rechazar de todas formas.
   function aplicarNombre(nombre, pista) {
     if (nombre) {
       $("nombre").value = nombre;
-      pista.textContent = "Conductor encontrado en la nómina.";
+      decirPista(pista, "Conductor encontrado.", true);
     } else {
-      pista.textContent = "No está en la nómina: escribe el nombre.";
+      $("nombre").value = "";
+      decirPista(pista, "Esa cédula no corresponde a un conductor activo. Comunícate con Talento Humano.");
     }
   }
 
@@ -338,7 +352,14 @@
 
     if (!placa) return mostrarAviso("Selecciona el vehículo.");
     if (cedula.length < 6) return mostrarAviso("Escribe la cédula del conductor.");
-    if (!nombre) return mostrarAviso("Escribe el nombre del conductor.");
+    // Sin nombre significa que la cedula no quedo verificada contra la nomina.
+    // El servidor lo rechazaria igual con un 403; se corta aqui para no hacerle
+    // perder el viaje ni el checklist ya marcado.
+    if (!nombre) {
+      return mostrarAviso(
+        "La cédula no está verificada. Revisa el número: solo un conductor activo de la nómina puede registrar el alistamiento.",
+      );
+    }
     if (estado.marcas.size < estado.actividades.length) {
       return mostrarAviso("Faltan puntos por verificar.");
     }
@@ -369,8 +390,10 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           placa,
+          // No se manda el nombre: el servidor lo resuelve contra la nomina y
+          // lo que llegue del formulario lo ignora. Mandarlo sugeriria que
+          // cuenta para algo.
           conductorCedula: cedula,
-          conductorNombre: nombre,
           kilometraje: soloDigitos($("kilometraje").value),
           observaciones: $("observaciones").value.trim(),
           actividades,

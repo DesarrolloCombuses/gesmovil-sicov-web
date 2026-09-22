@@ -12,10 +12,9 @@
 
    DOS COSAS MANDAN EN ESTE DISENO, y no son esteticas:
 
-   1. Se usa a pleno sol y a las 4 de la manana. De ahi que los estados
-      marcados sean rellenos de color con texto blanco, y no fondos tenidos con
-      texto de color: un tinte claro desaparece bajo el sol directo. Y de ahi
-      el modo oscuro, que a esa hora no es un lujo.
+   1. Se usa a pleno sol. De ahi que los estados marcados sean rellenos de
+      color con texto blanco, y no fondos tenidos con texto de color: un tinte
+      claro desaparece bajo el sol directo.
 
    2. Se toca con una mano, de pie, a veces con guantes. Ningun objetivo
       tactil baja de 48px.
@@ -59,40 +58,12 @@
   color-scheme: light;
 }
 
-/* El turno arranca de noche. Se redefinen solo los tokens: ninguna regla de
-   abajo sabe en que modo esta. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --tinta: #e8edf4;
-    --suave: #9aa8ba;
-    --tenue: #6b7a8d;
-    --linea: #2a3542;
-    --linea-fuerte: #3a4757;
-    --fondo: #0f151c;
-    --panel: #18202a;
-    --campo: #1e2833;
-
-    --ok: #3fbd7d;
-    --ok-claro: #2f9d64;
-    --ok-suave: #14301f;
-    --ok-borde: #2c6444;
-
-    --mal: #f28b83;
-    --mal-claro: #d4483c;
-    --mal-suave: #331715;
-    --mal-borde: #6b2b25;
-
-    --acento: #6ba3f5;
-    --acento-claro: #3d7fd8;
-    --acento-suave: #16243a;
-    --acento-borde: #2d4a75;
-
-    --sombra: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.25);
-    --sombra-barra: 0 -2px 16px rgba(0, 0, 0, 0.4);
-
-    color-scheme: dark;
-  }
-}
+/* Sin modo oscuro a proposito. Se probo y el resultado no convence: en una
+   app de trabajo que se llena a la carrera, el fondo negro hace que el verde y
+   el rojo de OK/Falla pierdan la contundencia que tienen sobre blanco, que es
+   lo unico que el conductor mira. Si mas adelante hace falta para el turno de
+   madrugada, se redefinen los tokens de :root y ninguna regla de abajo se
+   entera. */
 
 * { box-sizing: border-box; }
 

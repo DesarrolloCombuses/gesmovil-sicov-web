@@ -41,6 +41,10 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.3.0 -- fuera el modo oscuro (no convencia sobre el fondo negro), el nombre
+// del conductor pasa a ser de solo lectura porque lo pone la nomina, y el
+// formulario solo ofrece las placas de las rutas del SICOV.
+//
 // 1.2.0 -- rediseno del checklist. Ademas del aspecto, arregla un fallo de
 // estructura: la tarjeta de cada punto era un flex de una fila, asi que el
 // campo de observacion que aparece al marcar Falla entraba como tercera
@@ -52,7 +56,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.2.0";
+const VERSION = "1.3.0";
 
 const CACHE = `sicov-v${VERSION}`;
 
