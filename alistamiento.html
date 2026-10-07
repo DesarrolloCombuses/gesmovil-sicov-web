@@ -56,9 +56,15 @@
         </legend>
         <div class="si-no" role="radiogroup" aria-label="Condiciones de descanso">
           <button type="button" data-pregunta="descanso" data-valor="si"
-                  role="radio" aria-checked="false">Sí</button>
+                  role="radio" aria-checked="false">
+            <span class="si-no-glifo" aria-hidden="true">✓</span>
+            <span class="si-no-texto">Sí</span>
+          </button>
           <button type="button" data-pregunta="descanso" data-valor="no"
-                  role="radio" aria-checked="false">No</button>
+                  role="radio" aria-checked="false">
+            <span class="si-no-glifo" aria-hidden="true">✕</span>
+            <span class="si-no-texto">No</span>
+          </button>
         </div>
         <span class="error-campo" id="err-apto-descanso" role="alert" hidden></span>
       </fieldset>
@@ -70,9 +76,15 @@
         </legend>
         <div class="si-no" role="radiogroup" aria-label="Alcohol y sustancias">
           <button type="button" data-pregunta="sustancias" data-valor="si"
-                  role="radio" aria-checked="false">Sí</button>
+                  role="radio" aria-checked="false">
+            <span class="si-no-glifo" aria-hidden="true">✓</span>
+            <span class="si-no-texto">Sí</span>
+          </button>
           <button type="button" data-pregunta="sustancias" data-valor="no"
-                  role="radio" aria-checked="false">No</button>
+                  role="radio" aria-checked="false">
+            <span class="si-no-glifo" aria-hidden="true">✕</span>
+            <span class="si-no-texto">No</span>
+          </button>
         </div>
         <span class="error-campo" id="err-apto-sustancias" role="alert" hidden></span>
       </fieldset>
@@ -84,12 +96,13 @@
         <textarea id="apto-observacion" maxlength="300"
                   placeholder="Lo que considere importante que quede registrado"></textarea>
       </label>
-
-      <p class="nota-legal">
-        Esta declaración queda registrada en la plataforma de COMBUSES.
-        <strong>No se transmite a la Superintendencia de Transporte.</strong>
-      </p>
     </div>
+
+    <!-- El resto no aparece hasta que las dos esten respondidas. No es un
+         adorno: con todo el formulario a la vista, la declaracion se salta y se
+         vuelve a ella al final, cuando responder "no" ya cuesta tirar el
+         trabajo. Asi la pregunta llega cuando todavia no cuesta nada. -->
+    <div id="resto" hidden>
 
     <div class="panel">
       <h2>Vehículo y conductor</h2>
@@ -152,6 +165,7 @@
         <span class="contador" id="cuenta-obs" aria-live="polite"></span>
       </label>
     </div>
+    </div><!-- /#resto -->
   </form>
 
   <!-- Lo que falta, en una lista donde cada punto lleva a su sitio. Un aviso

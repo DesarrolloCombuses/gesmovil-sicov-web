@@ -75,7 +75,11 @@
 
       $("cargando").hidden = true;
       $("formulario").hidden = false;
-      $("barra").hidden = false;
+      // La barra de envio NO se muestra todavia: aparece junto con el resto
+      // del formulario, cuando la declaracion este respondida. Un boton
+      // Registrar flotando sobre dos preguntas sin contestar invita a tocarlo
+      // para nada.
+      pintarEstadoDeclaracion();
 
       if (!datos.listo) {
         mostrarAviso(
@@ -750,20 +754,44 @@
       for (const b of grupo.querySelectorAll("button")) {
         const marcado = b === boton;
         b.setAttribute("aria-checked", String(marcado));
-        b.dataset.elegido = marcado ? b.dataset.valor : "";
+        // Se quita el atributo en vez de dejarlo vacio: el CSS apaga los que
+        // NO lo tienen, y un data-elegido="" seguiria contando como presente.
+        if (marcado) b.dataset.elegido = b.dataset.valor;
+        else delete b.dataset.elegido;
       }
-
-      // El campo de explicacion aparece en cuanto alguna respuesta es "no".
-      const algunNo = estado.apto.descanso === false || estado.apto.sustancias === false;
-      $("apto-explicacion").hidden = !algunNo;
+      grupo.closest(".declaracion").dataset.respondida = "si";
 
       if (!valor && !avisoAptitudVisto[pregunta]) {
         avisoAptitudVisto[pregunta] = true;
         avisarNoApto(pregunta);
       }
 
+      pintarEstadoDeclaracion();
       revalidarSiHaceFalta();
     });
+  }
+
+  /** Muestra el resto del formulario cuando las dos estan respondidas, y el
+      campo de explicacion si alguna fue "no". */
+  function pintarEstadoDeclaracion() {
+    const algunNo = estado.apto.descanso === false || estado.apto.sustancias === false;
+    $("apto-explicacion").hidden = !algunNo;
+
+    const completas = estado.apto.descanso !== null && estado.apto.sustancias !== null;
+    const resto = $("resto");
+    const abriendo = completas && resto.hidden;
+    resto.hidden = !completas;
+
+    // La barra de envio acompaña al resto: un boton Registrar flotando sobre
+    // dos preguntas sin responder invita a tocarlo para nada.
+    const barra = $("barra");
+    if (barra) barra.hidden = !completas || estado.enviado;
+
+    if (abriendo) {
+      // Se lleva la vista a lo que acaba de aparecer. Sin esto, en un telefono
+      // el formulario crece por debajo del pliegue y parece que no paso nada.
+      setTimeout(() => resto.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+    }
   }
 
   function avisarNoApto(pregunta) {
@@ -796,10 +824,10 @@
             const grupo = document.querySelector(`[data-campo="apto-${pregunta}"] .si-no`);
             for (const b of grupo.querySelectorAll("button")) {
               b.setAttribute("aria-checked", "false");
-              b.dataset.elegido = "";
+              delete b.dataset.elegido;
             }
-            const algunNo = estado.apto.descanso === false || estado.apto.sustancias === false;
-            $("apto-explicacion").hidden = !algunNo;
+            delete grupo.closest(".declaracion").dataset.respondida;
+            pintarEstadoDeclaracion();
             window.SICOV.cerrarModal();
             revalidarSiHaceFalta();
           },
