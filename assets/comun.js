@@ -272,33 +272,115 @@
   /** Aplica el worker en espera. La recarga la dispara controllerchange. */
   function aplicarActualizacion() {
     if (!registro || !registro.waiting) return;
+    pararCuenta();
+    const cinta = $("cinta-version");
+    if (cinta) {
+      cinta.textContent = "Actualizando…";
+      cinta.className = "cinta nueva";
+    }
     registro.waiting.postMessage({ tipo: "SKIP_WAITING" });
+  }
+
+  // -------------------------------------------------------------------------
+  // Aviso de version nueva, con cuenta atras
+  // -------------------------------------------------------------------------
+  // La cuenta atras solo corre cuando no hay nada que perder. Con el
+  // formulario a medias, una recarga automatica se lleva los puntos ya
+  // marcados, y el conductor no tiene por que pagar con su trabajo el momento
+  // en que se publico una version. Ahi el aviso se queda quieto y espera.
+
+  const SEGUNDOS_CUENTA = 10;
+  let relojCuenta = null;
+  let pospuesta = false;
+
+  function pararCuenta() {
+    clearInterval(relojCuenta);
+    relojCuenta = null;
   }
 
   function anunciarVersionNueva() {
     const cinta = $("cinta-version");
-    if (!cinta) return;
-
-    // Si no hay nada escrito, se actualiza sola: molestar con un boton para
-    // algo que no cuesta nada es ruido.
-    if (!hayTrabajoSinGuardar()) {
+    if (!cinta) {
+      // Pagina sin cinta: no hay donde avisar, y esperar indefinidamente
+      // dejaria la version vieja para siempre.
       aplicarActualizacion();
       return;
     }
+    if (pospuesta) return;
+    marcarVersion("nueva");
 
+    const conTrabajo = hayTrabajoSinGuardar();
     cinta.className = "cinta nueva";
     cinta.hidden = false;
-    cinta.innerHTML = "";
+    cinta.textContent = "";
+
+    // Barra que se vacia con la cuenta. Un numero solo no se percibe mientras
+    // se mira otra cosa; la barra se ve de reojo.
+    const barra = document.createElement("div");
+    barra.className = "cinta-barra";
+    barra.setAttribute("aria-hidden", "true");
 
     const texto = document.createElement("span");
-    texto.textContent = "Hay una versión nueva.";
+    texto.className = "cinta-texto";
 
-    const boton = document.createElement("button");
-    boton.type = "button";
-    boton.textContent = "Actualizar";
-    boton.addEventListener("click", aplicarActualizacion);
+    const acciones = document.createElement("span");
+    acciones.className = "cinta-acciones";
 
-    cinta.append(texto, boton);
+    const ahora = document.createElement("button");
+    ahora.type = "button";
+    ahora.textContent = conTrabajo ? "Actualizar" : "Ahora";
+    ahora.addEventListener("click", aplicarActualizacion);
+    acciones.appendChild(ahora);
+
+    if (conTrabajo) {
+      texto.textContent = "Hay una versión nueva. Se instala cuando termines.";
+      cinta.append(texto, acciones);
+      return;
+    }
+
+    const luego = document.createElement("button");
+    luego.type = "button";
+    luego.className = "discreta";
+    luego.textContent = "Luego";
+    luego.addEventListener("click", () => {
+      pararCuenta();
+      pospuesta = true;
+      cinta.hidden = true;
+      // Queda instalada y esperando: entra sola la proxima vez que se abra la
+      // app. "Luego" aplaza el corte, no la actualizacion.
+      marcarVersion("pendiente");
+    });
+    acciones.append(luego);
+
+    cinta.append(barra, texto, acciones);
+
+    let restan = SEGUNDOS_CUENTA;
+    const pintar = () => {
+      texto.textContent = `Versión nueva · se instala en ${restan} s`;
+      barra.style.setProperty("--restante", (restan / SEGUNDOS_CUENTA) * 100 + "%");
+    };
+    pintar();
+
+    pararCuenta();
+    relojCuenta = setInterval(() => {
+      restan -= 1;
+      if (restan <= 0) {
+        pararCuenta();
+        aplicarActualizacion();
+        return;
+      }
+      // Si empezo a llenar el formulario durante la cuenta, se para: ya hay
+      // algo que perder.
+      if (hayTrabajoSinGuardar()) {
+        pararCuenta();
+        texto.textContent = "Hay una versión nueva. Se instala cuando termines.";
+        barra.remove();
+        luego.remove();
+        ahora.textContent = "Actualizar";
+        return;
+      }
+      pintar();
+    }, 1000);
   }
 
   function vigilarRegistro(reg) {
@@ -352,26 +434,75 @@
     }
   }
 
-  /**
-   * Pregunta al worker que version esta sirviendo y la muestra en el pie.
-   * Se le pregunta a el en vez de guardar la version tambien aqui: dos copias
-   * del numero acabarian discrepando, y la que importa es la que atiende.
-   */
+  // -------------------------------------------------------------------------
+  // Version visible
+  // -------------------------------------------------------------------------
+  // Se le pregunta al worker en vez de guardar el numero tambien aqui: dos
+  // copias acabarian discrepando, y la que importa es la que atiende. Si el
+  // pie dijera 1.7 mientras el worker sirve 1.6, el dato no serviria para lo
+  // unico que se usa, que es saber que version tiene un telefono concreto
+  // cuando alguien reporta algo raro.
+
+  let versionActual = null;
+
+  /** Pinta el estado del indicador: al dia, version nueva lista, o sin SW. */
+  function marcarVersion(estado) {
+    const caja = $("version-caja");
+    if (caja) caja.dataset.estado = estado;
+    const nota = $("version-nota");
+    if (!nota) return;
+    nota.textContent =
+      estado === "nueva" || estado === "pendiente"
+        ? "versión nueva lista"
+        : estado === "sinsw"
+          ? "sin modo sin red"
+          : "al día";
+  }
+
   function mostrarVersion() {
     const pie = $("version");
     if (!pie) return;
 
     const sw = navigator.serviceWorker.controller;
     if (!sw) {
-      pie.textContent = "sin modo offline todavía";
+      // Primera visita: el worker se instalo pero todavia no controla esta
+      // pagina. Se sabra al recargar.
+      pie.textContent = "—";
+      marcarVersion("sinsw");
       return;
     }
 
     const canal = new MessageChannel();
     canal.port1.onmessage = (ev) => {
-      if (ev.data?.tipo === "VERSION") pie.textContent = "v" + ev.data.version;
+      if (ev.data?.tipo !== "VERSION") return;
+      versionActual = ev.data.version;
+      pie.textContent = "v" + versionActual;
+      if (!registro || !registro.waiting) marcarVersion("aldia");
     };
     sw.postMessage({ tipo: "VERSION" }, [canal.port2]);
+  }
+
+  /** Busca una version nueva a mano. Lo dispara el toque en el indicador. */
+  async function buscarActualizacion() {
+    const nota = $("version-nota");
+    if (!registro) {
+      if (nota) nota.textContent = "sin modo sin red";
+      return;
+    }
+    if (nota) nota.textContent = "buscando…";
+    try {
+      await registro.update();
+      // update() resuelve tanto si hay version nueva como si no; si la hay, el
+      // evento updatefound ya habra llamado a anunciarVersionNueva.
+      if (!registro.waiting && nota) {
+        // Se vuelve a permitir el aviso: si pospuso y luego pregunta a mano,
+        // es que ahora si quiere saber.
+        pospuesta = false;
+        nota.textContent = "al día";
+      }
+    } catch (_) {
+      if (nota) nota.textContent = "no se pudo comprobar";
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -383,6 +514,12 @@
   // conductor lo sabe antes de llenar cuarenta puntos y no al tocar Registrar.
   comprobarConexion(true);
   registrarServiceWorker();
+
+  // El indicador de version es un boton: al tocarlo busca actualizaciones. Es
+  // la via para que alguien de soporte pueda decir "toca el numero de abajo"
+  // sin tener que explicar como se desinstala una PWA.
+  const cajaVersion = $("version-caja");
+  if (cajaVersion) cajaVersion.addEventListener("click", buscarActualizacion);
 
   window.SICOV = {
     CONFIG,
@@ -397,6 +534,10 @@
     hayConexion: () => navigator.onLine,
     /** Prueba la red de verdad contra el servidor. Devuelve una promesa. */
     comprobarConexion,
+    /** Version que esta sirviendo el worker, o null si todavia no respondio. */
+    version: () => versionActual,
+    /** Busca una version nueva a mano. */
+    buscarActualizacion,
     /** Declara como sabe este formulario si tiene trabajo a medias. */
     registrarGuardia(fn) {
       if (typeof fn === "function") hayTrabajoSinGuardar = fn;

@@ -116,7 +116,16 @@
     <ul class="pendientes-lista" id="pendientes-lista"></ul>
   </div>
 
-  <p class="pie">SICOV · <span id="version">…</span></p>
+  <footer class="pie">
+    <button type="button" class="version-caja" id="version-caja" data-estado="sinsw">
+      <span class="version-luz" aria-hidden="true"></span>
+      <span class="version-datos">
+        <span class="version-num">SICOV <span id="version">…</span></span>
+        <span class="version-nota" id="version-nota">comprobando…</span>
+      </span>
+      <span class="version-refrescar" aria-hidden="true">&#8635;</span>
+    </button>
+  </footer>
 </div>
 
 <!-- Solo el boton: el progreso ya vive en la cabecera. El rotulo del boton

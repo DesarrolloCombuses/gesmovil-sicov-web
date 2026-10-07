@@ -1,4 +1,4 @@
-/* ---------------------------------------------------------------------------
+﻿/* ---------------------------------------------------------------------------
    Service worker de la plataforma SICOV
    ---------------------------------------------------------------------------
    MANEJO DE VERSIONES
@@ -41,6 +41,8 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.8.0 -- manejo de versiones autogestionable: cuenta atras de 10s e indicador de version a la vista
+//
 // 1.7.0 -- validacion visible y conexion comprobada de verdad.
 //
 // Cada campo dice lo suyo debajo de si mismo, y al intentar enviar aparece una
@@ -52,7 +54,7 @@
 //
 // La conexion se prueba contra el servidor y no con navigator.onLine, que solo
 // dice que hay una interfaz levantada. En el patio el telefono queda enganchado
-// a un wifi sin salida mas veces de las que queda sin señal, y ahi onLine
+// a un wifi sin salida mas veces de las que queda sin seÃ±al, y ahi onLine
 // responde true mientras ninguna peticion llega.
 //
 // Control de escritura: la cedula se limpia en el propio evento (cubre el
@@ -96,7 +98,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.7.0";
+const VERSION = "1.8.0";
 
 const CACHE = `sicov-v${VERSION}`;
 
@@ -161,7 +163,7 @@ self.addEventListener("activate", (evento) => {
         await self.registration.navigationPreload.enable().catch(() => {});
       }
 
-      // Tomar el control de las pestañas abiertas sin que tengan que recargar.
+      // Tomar el control de las pestaÃ±as abiertas sin que tengan que recargar.
       await self.clients.claim();
     })(),
   );
@@ -182,7 +184,7 @@ self.addEventListener("message", (evento) => {
 
   if (dato.tipo === "VERSION") {
     // La pagina pregunta que version la esta atendiendo. Responder por el
-    // puerto del mensaje, y no por broadcast, evita que una pestaña reciba la
+    // puerto del mensaje, y no por broadcast, evita que una pestaÃ±a reciba la
     // respuesta de la pregunta de otra.
     evento.ports?.[0]?.postMessage({ tipo: "VERSION", version: VERSION });
   }
@@ -230,8 +232,8 @@ async function atenderNavegacion(evento) {
     if (guardada) return guardada;
     return new Response(
       "<!doctype html><meta charset=utf-8><title>Sin conexion</title>" +
-        "<p style='font:16px system-ui;padding:24px'>Sin conexión y sin copia guardada. " +
-        "Conéctate una vez para poder usar la app sin red.",
+        "<p style='font:16px system-ui;padding:24px'>Sin conexiÃ³n y sin copia guardada. " +
+        "ConÃ©ctate una vez para poder usar la app sin red.",
       { status: 503, headers: { "Content-Type": "text/html; charset=utf-8" } },
     );
   }
@@ -271,7 +273,7 @@ async function atenderFormularioApi(peticion) {
   return new Response(
     JSON.stringify({
       success: false,
-      message: "Sin conexión y sin catálogo guardado. Conéctate una vez para poder usar la app sin red.",
+      message: "Sin conexiÃ³n y sin catÃ¡logo guardado. ConÃ©ctate una vez para poder usar la app sin red.",
     }),
     { status: 503, headers: { "Content-Type": "application/json; charset=utf-8" } },
   );
