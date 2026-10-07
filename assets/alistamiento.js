@@ -25,6 +25,8 @@
     // El acordeon consulta esto en cada marca; recorrer el DOM 40 veces por
     // toque se sentia en los telefonos viejos.
     grupos: new Map(),
+    // Autorreporte: null = sin responder, true = si, false = no.
+    apto: { descanso: null, sustancias: null },
     enviando: false,
     enviado: false,
   };
@@ -35,6 +37,8 @@
     if (estado.enviado) return false;
     return (
       estado.marcas.size > 0 ||
+      estado.apto.descanso !== null ||
+      estado.apto.sustancias !== null ||
       !!$("placa")?.value ||
       !!$("cedula")?.value ||
       !!$("observaciones")?.value
@@ -101,32 +105,35 @@
   // rojo al abrir el formulario convierte el rojo en ruido y deja de leerse.
   // Despues del primer intento de enviar, el campo ya corregido se limpia solo.
 
-  const CAMPOS = ["placa", "cedula", "kilometraje"];
+  const CAMPOS = ["placa", "cedula", "kilometraje", "apto-descanso", "apto-sustancias"];
   let intentoDeEnvio = false;
+
+  /** La caja del campo. Se busca por [data-campo] y no por el id del control,
+      porque las declaraciones son un fieldset con botones, sin un input que
+      llevara el id. */
+  function cajaDe(campo) {
+    return document.querySelector(`[data-campo="${campo}"]`);
+  }
 
   function ponerError(campo, texto) {
     const el = $("err-" + campo);
-    const control = $(campo);
     if (el) {
       el.textContent = texto;
       el.hidden = false;
     }
-    if (control) {
-      control.setAttribute("aria-invalid", "true");
-      const caja = control.closest("[data-campo]");
-      if (caja) caja.dataset.error = "si";
-    }
+    const caja = cajaDe(campo);
+    if (caja) caja.dataset.error = "si";
+    const control = $(campo);
+    if (control) control.setAttribute("aria-invalid", "true");
   }
 
   function quitarError(campo) {
     const el = $("err-" + campo);
-    const control = $(campo);
     if (el) el.hidden = true;
-    if (control) {
-      control.removeAttribute("aria-invalid");
-      const caja = control.closest("[data-campo]");
-      if (caja) delete caja.dataset.error;
-    }
+    const caja = cajaDe(campo);
+    if (caja) delete caja.dataset.error;
+    const control = $(campo);
+    if (control) control.removeAttribute("aria-invalid");
   }
 
   /**
@@ -167,6 +174,19 @@
       faltas.push({
         campo: "kilometraje",
         texto: "Ese kilometraje parece muy alto. Revisa el número.",
+      });
+    }
+
+    if (estado.apto.descanso === null) {
+      faltas.push({
+        campo: "apto-descanso",
+        texto: "Falta responder la pregunta sobre descanso y fatiga.",
+      });
+    }
+    if (estado.apto.sustancias === null) {
+      faltas.push({
+        campo: "apto-sustancias",
+        texto: "Falta responder la pregunta sobre alcohol y sustancias.",
       });
     }
 
@@ -225,12 +245,12 @@
   /** Lleva la pantalla a lo que falta, abriendo el bloque si hace falta. */
   function irA(falta) {
     if (falta.campo) {
-      const control = $(falta.campo);
-      const caja = control.closest("[data-campo]") || control;
-      caja.scrollIntoView({ behavior: "smooth", block: "center" });
+      const caja = cajaDe(falta.campo);
+      if (caja) caja.scrollIntoView({ behavior: "smooth", block: "center" });
       // El foco va despues del scroll: en iOS, enfocar un campo lo desplaza
       // por su cuenta y pelea con el scrollIntoView.
-      if (!control.readOnly && control.tagName !== "SELECT") {
+      const control = $(falta.campo);
+      if (control && !control.readOnly && control.tagName !== "SELECT") {
         setTimeout(() => control.focus({ preventScroll: true }), 320);
       }
       return;
@@ -710,49 +730,159 @@
     }
   });
 
+  // -------------------------------------------------------------------------
+  // Autorreporte de condiciones
+  // -------------------------------------------------------------------------
+  // No bloquea el registro. Si lo bloqueara, el conductor aprenderia en un dia
+  // que respondiendo "si" puede trabajar, y se perderia justo el dato que se
+  // queria capturar. Lo que hace es dejar constancia, marcar el alistamiento
+  // con novedad y decirle que no debe operar y a quien avisar.
+
+  let avisoAptitudVisto = { descanso: false, sustancias: false };
+
+  for (const boton of document.querySelectorAll("[data-pregunta]")) {
+    boton.addEventListener("click", () => {
+      const pregunta = boton.dataset.pregunta;
+      const valor = boton.dataset.valor === "si";
+      estado.apto[pregunta] = valor;
+
+      const grupo = boton.parentElement;
+      for (const b of grupo.querySelectorAll("button")) {
+        const marcado = b === boton;
+        b.setAttribute("aria-checked", String(marcado));
+        b.dataset.elegido = marcado ? b.dataset.valor : "";
+      }
+
+      // El campo de explicacion aparece en cuanto alguna respuesta es "no".
+      const algunNo = estado.apto.descanso === false || estado.apto.sustancias === false;
+      $("apto-explicacion").hidden = !algunNo;
+
+      if (!valor && !avisoAptitudVisto[pregunta]) {
+        avisoAptitudVisto[pregunta] = true;
+        avisarNoApto(pregunta);
+      }
+
+      revalidarSiHaceFalta();
+    });
+  }
+
+  function avisarNoApto(pregunta) {
+    const esDescanso = pregunta === "descanso";
+    window.SICOV.modal({
+      tipo: "aviso",
+      titulo: esDescanso ? "No debe operar con fatiga" : "No debe operar en esa condición",
+      mensaje: esDescanso
+        ? "Conducir con fatiga o somnolencia pone en riesgo su vida y la de los pasajeros. " +
+          "Informe a su supervisor antes de salir: la empresa debe asignar otro conductor."
+        : "No puede operar el vehículo en esa condición. Informe a su supervisor de inmediato.",
+      datos: [
+        ["Qué pasa ahora", "Su respuesta queda registrada"],
+        ["Puede continuar", "Sí, el alistamiento se guarda"],
+        ["El registro queda", "Marcado como novedad"],
+      ],
+      acciones: [
+        {
+          texto: "Entendido, avisaré a mi supervisor",
+          primario: true,
+          alTocar: () => window.SICOV.cerrarModal(),
+        },
+        {
+          texto: "Cambiar mi respuesta",
+          alTocar: () => {
+            // Se deshace la respuesta, no se pone "si": ponerla por el
+            // conductor seria responder por el.
+            estado.apto[pregunta] = null;
+            avisoAptitudVisto[pregunta] = false;
+            const grupo = document.querySelector(`[data-campo="apto-${pregunta}"] .si-no`);
+            for (const b of grupo.querySelectorAll("button")) {
+              b.setAttribute("aria-checked", "false");
+              b.dataset.elegido = "";
+            }
+            const algunNo = estado.apto.descanso === false || estado.apto.sustancias === false;
+            $("apto-explicacion").hidden = !algunNo;
+            window.SICOV.cerrarModal();
+            revalidarSiHaceFalta();
+          },
+        },
+      ],
+    });
+  }
+
+  /**
+   * Comprueba si la placa ya se alisto hoy. Devuelve el registro existente, o
+   * null si esta libre; `undefined` si no se pudo comprobar.
+   *
+   * La diferencia entre null y undefined importa: sin red no se puede afirmar
+   * que el vehiculo esta libre, y tratarlo como libre dejaria al conductor
+   * llenar cuarenta puntos para que el servidor se lo rechace al final.
+   */
+  async function consultarSiYaAlisto(placa) {
+    try {
+      const resp = await fetch(RUTA + "/hoy?placa=" + encodeURIComponent(placa), {
+        cache: "no-store",
+      });
+      if (!resp.ok) return undefined;
+      const datos = await resp.json();
+      return datos.yaRegistrado ? datos.registro || {} : null;
+    } catch (_) {
+      return undefined;
+    }
+  }
+
+  function avisarYaAlistado(placa, r, alElegirOtra) {
+    window.SICOV.modal({
+      tipo: "aviso",
+      titulo: "Este vehículo ya se alistó hoy",
+      mensaje:
+        "Solo se registra un alistamiento por vehículo y por día. Si hay que corregir algo " +
+        "del que ya está, se corrige ese registro; no se crea otro.",
+      datos: [
+        ["Vehículo", placa],
+        ["Lo registró", r.conductor],
+        ["Fecha y hora", r.registrado_en ? fechaHoraCol(r.registrado_en) : null],
+      ],
+      acciones: [
+        {
+          texto: "Elegir otro vehículo",
+          primario: true,
+          alTocar: () => {
+            // Se limpia la placa: dejarla elegida invita a seguir llenando un
+            // formulario que no se va a poder enviar.
+            $("placa").value = "";
+            window.SICOV.cerrarModal();
+            if (typeof alElegirOtra === "function") alElegirOtra();
+            $("placa").focus();
+          },
+        },
+      ],
+    });
+  }
+
   $("placa").addEventListener("change", async (ev) => {
     ocultarAviso();
     revalidarSiHaceFalta();
     const placa = ev.target.value;
     if (!placa) return;
-    try {
-      const resp = await fetch(RUTA + "/hoy?placa=" + encodeURIComponent(placa));
-      const datos = await resp.json();
-      if (datos.yaRegistrado) {
-        // Modal y no una linea de aviso: esto le ahorra llenar 40 puntos para
-        // que el servidor se lo rechace al final con un 409. Tiene que verlo.
-        const r = datos.registro || {};
-        window.SICOV.modal({
-          tipo: "aviso",
-          titulo: "Este vehículo ya se alistó hoy",
-          mensaje:
-            "Solo se registra un alistamiento por vehículo y por día. Si hay que corregir algo " +
-            "del que ya está, se corrige ese registro; no se crea otro.",
-          datos: [
-            ["Vehículo", placa],
-            ["Lo registró", r.conductor],
-            ["Fecha y hora", fechaHoraCol(r.registrado_en)],
-          ],
-          acciones: [
-            {
-              texto: "Elegir otro vehículo",
-              primario: true,
-              alTocar: () => {
-                // Se limpia la placa: dejarla elegida invita a seguir llenando
-                // un formulario que no se va a poder enviar.
-                $("placa").value = "";
-                window.SICOV.cerrarModal();
-                $("placa").focus();
-              },
-            },
-          ],
-        });
-      }
-    } catch {
-      // Es una comprobacion de cortesia y necesita red. Si falla, el servidor
-      // lo rechazara al enviar igual: no vale la pena molestar al conductor.
+
+    const pista = $("pista-placa");
+    if (pista) decirPista(pista, "Comprobando…");
+
+    const ya = await consultarSiYaAlisto(placa);
+
+    if (ya === undefined) {
+      // Sin red no se puede afirmar que esta libre. Se dice, en vez de callar:
+      // callar equivale a decir que si.
+      if (pista) decirPista(pista, "No se pudo comprobar si ya se alistó. Se verifica al enviar.", false);
+      return;
     }
+    if (ya === null) {
+      if (pista) decirPista(pista, "Disponible para alistar hoy", true);
+      return;
+    }
+    if (pista) decirPista(pista, "");
+    avisarYaAlistado(placa, ya);
   });
+
 
   // -------------------------------------------------------------------------
   // Envio
@@ -809,6 +939,37 @@
       );
     }
 
+    // Segunda comprobacion, ya con red confirmada. La primera fue al elegir la
+    // placa, y entre ese momento y este pasan los minutos que toma marcar
+    // cuarenta puntos: en ese rato otro conductor pudo alistar el mismo
+    // vehiculo, o la primera comprobacion pudo no haberse hecho por falta de
+    // señal. El servidor lo rechazaria con un 409, pero entonces el conductor
+    // ya habria hecho el trabajo dos veces.
+    $("enviar-texto").textContent = "Verificando el vehículo…";
+    const ya = await consultarSiYaAlisto(placa);
+    if (ya) {
+      avisarYaAlistado(placa, ya, () => {
+        // Al elegir otra placa se conserva el checklist: los puntos verificados
+        // son del vehiculo anterior, asi que se limpian. Lo que se conserva es
+        // la cedula y la declaracion, que son del conductor.
+        estado.marcas.clear();
+        for (const [, g] of estado.grupos) {
+          for (const t of g.cuerpo.querySelectorAll(".item")) {
+            delete t.dataset.estado;
+            const obs = t.querySelector(".item-obs");
+            if (obs) obs.remove();
+            for (const b of t.querySelectorAll(".switch button")) {
+              b.setAttribute("aria-pressed", "false");
+            }
+          }
+        }
+        const primero = [...estado.grupos.keys()][0];
+        if (primero) abrirGrupo(primero, true);
+        actualizarProgreso();
+      });
+      return;
+    }
+
     const actividades = estado.actividades.map((act) => {
       const obs = document.querySelector(`[data-obs="${act.id}"]`);
       return {
@@ -834,6 +995,11 @@
           conductorCedula: cedula,
           kilometraje: soloDigitos($("kilometraje").value),
           observaciones: $("observaciones").value.trim(),
+          // Se queda en la base de COMBUSES: la API de GESMOVIL selecciona
+          // columna por columna y estas no estan en su lista.
+          aptoDescanso: estado.apto.descanso,
+          aptoSustancias: estado.apto.sustancias,
+          aptoObservacion: $("apto-observacion").value.trim(),
           actividades,
         }),
       });

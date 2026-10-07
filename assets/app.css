@@ -270,6 +270,71 @@ select {
 .par > label { flex: 1; min-width: 0; }
 @media (max-width: 420px) { .par { flex-direction: column; gap: 0; } }
 
+/* --- Declaracion del conductor ---
+   Va antes que todo lo demas en el formulario. El panel se distingue del resto
+   para que no se pase de largo: es lo unico que el conductor afirma sobre si
+   mismo, y lo que puede acabar en un expediente si pasa algo. */
+.panel-declaracion {
+  border-color: var(--acento-borde);
+  background: linear-gradient(180deg, var(--acento-suave) 0%, var(--panel) 72px);
+}
+
+.declaracion {
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+.declaracion:last-of-type { margin-bottom: 14px; }
+.declaracion legend {
+  padding: 0;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+  font-weight: 550;
+  line-height: 1.4;
+  color: var(--tinta);
+}
+
+/* Si y No del mismo tamano. Hacer el "Si" mas grande o mas vistoso seria
+   inducir la respuesta, y en una declaracion que puede acabar en un
+   expediente eso no es un detalle de estilo. */
+.si-no { display: flex; gap: 10px; }
+.si-no button {
+  flex: 1;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1.5px solid var(--linea-fuerte);
+  border-radius: var(--radio-chico);
+  background: var(--campo);
+  color: var(--suave);
+  font: 650 1rem/1 system-ui, sans-serif;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s, color .15s;
+}
+.si-no button:active { transform: scale(0.98); }
+.si-no button[data-elegido="si"] {
+  background: var(--ok-claro);
+  border-color: var(--ok-claro);
+  color: #fff;
+}
+.si-no button[data-elegido="no"] {
+  background: var(--mal-claro);
+  border-color: var(--mal-claro);
+  color: #fff;
+}
+.declaracion[data-error="si"] .si-no button {
+  border-color: var(--mal-borde);
+}
+
+.nota-legal {
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--linea);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--suave);
+}
+.nota-legal strong { color: var(--tinta); }
+
 /* --- Campo con error ---
    El mensaje va pegado a su campo. Un aviso suelto arriba que dice "faltan
    datos" obliga a recorrer el formulario buscando cual es. */

@@ -43,6 +43,54 @@
   <div id="aviso" class="aviso error" hidden></div>
 
   <form id="formulario" hidden>
+    <!-- Va primero a proposito. Si fuera al final, se responderia con el
+         formulario ya lleno y la respuesta "no" costaria tirar el trabajo:
+         la pregunta dejaria de ser una pregunta. -->
+    <div class="panel panel-declaracion">
+      <h2>Antes de empezar</h2>
+
+      <fieldset class="declaracion" data-campo="apto-descanso">
+        <legend>
+          ¿Se encuentra en condiciones óptimas de descanso, sin fatiga ni
+          somnolencia, para operar el vehículo de manera segura?
+        </legend>
+        <div class="si-no" role="radiogroup" aria-label="Condiciones de descanso">
+          <button type="button" data-pregunta="descanso" data-valor="si"
+                  role="radio" aria-checked="false">Sí</button>
+          <button type="button" data-pregunta="descanso" data-valor="no"
+                  role="radio" aria-checked="false">No</button>
+        </div>
+        <span class="error-campo" id="err-apto-descanso" role="alert" hidden></span>
+      </fieldset>
+
+      <fieldset class="declaracion" data-campo="apto-sustancias">
+        <legend>
+          ¿Declara no haber consumido alcohol, sustancias psicoactivas ni
+          medicamentos que afecten la conducción?
+        </legend>
+        <div class="si-no" role="radiogroup" aria-label="Alcohol y sustancias">
+          <button type="button" data-pregunta="sustancias" data-valor="si"
+                  role="radio" aria-checked="false">Sí</button>
+          <button type="button" data-pregunta="sustancias" data-valor="no"
+                  role="radio" aria-checked="false">No</button>
+        </div>
+        <span class="error-campo" id="err-apto-sustancias" role="alert" hidden></span>
+      </fieldset>
+
+      <!-- Solo aparece si alguna respuesta fue "No". Opcional: obligar a
+           justificar una respuesta incomoda empuja a cambiarla. -->
+      <label id="apto-explicacion" hidden>
+        <span class="etiqueta">¿Quiere agregar algo? <span class="pista enlinea">(opcional)</span></span>
+        <textarea id="apto-observacion" maxlength="300"
+                  placeholder="Lo que considere importante que quede registrado"></textarea>
+      </label>
+
+      <p class="nota-legal">
+        Esta declaración queda registrada en la plataforma de COMBUSES.
+        <strong>No se transmite a la Superintendencia de Transporte.</strong>
+      </p>
+    </div>
+
     <div class="panel">
       <h2>Vehículo y conductor</h2>
 
@@ -51,6 +99,7 @@
         <select id="placa" required aria-describedby="err-placa">
           <option value="">Selecciona el vehículo…</option>
         </select>
+        <span class="pista" id="pista-placa"></span>
         <span class="error-campo" id="err-placa" role="alert" hidden></span>
       </label>
 
