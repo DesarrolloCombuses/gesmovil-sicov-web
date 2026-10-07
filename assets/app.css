@@ -50,10 +50,20 @@
   --acento-suave: #eaf1fb;
   --acento-borde: #bed3f0;
 
-  --radio: 14px;
-  --radio-chico: 10px;
-  --sombra: 0 1px 2px rgba(22, 32, 44, 0.04), 0 4px 12px rgba(22, 32, 44, 0.05);
-  --sombra-barra: 0 -2px 16px rgba(22, 32, 44, 0.10);
+  /* Radios grandes y sombras en capas. Una sola sombra difusa aplana el
+     panel; dos (una de contacto, corta y oscura, y otra de elevacion, larga y
+     tenue) es como se comporta una sombra real y es lo que separa una tarjeta
+     de un recuadro con borde. */
+  --radio: 20px;
+  --radio-chico: 14px;
+  --radio-mini: 11px;
+  --sombra:
+    0 1px 2px rgba(16, 28, 44, 0.05),
+    0 8px 24px -8px rgba(16, 28, 44, 0.10);
+  --sombra-alta:
+    0 2px 4px rgba(16, 28, 44, 0.06),
+    0 16px 40px -12px rgba(16, 28, 44, 0.18);
+  --sombra-barra: 0 -1px 0 rgba(16, 28, 44, 0.06), 0 -12px 32px -8px rgba(16, 28, 44, 0.12);
 
   color-scheme: light;
 }
@@ -75,7 +85,13 @@ body {
   padding: env(safe-area-inset-top, 0) 0 calc(env(safe-area-inset-bottom, 0) + 108px);
   background: var(--fondo);
   color: var(--tinta);
-  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* La familia del sistema, pero pidiendo la optica de texto de iOS y las
+     formas mas modernas en Android. Sin fuente web: la app tiene que abrir
+     igual sin red, y una fuente que no carga deja el formulario saltando de
+     tamano justo cuando el conductor empieza a tocar. */
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+        "Segoe UI", Roboto, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
   -webkit-text-size-adjust: 100%;
   /* La app instalada no debe dar el efecto de rebote de una pagina web. */
   overscroll-behavior-y: contain;
@@ -84,9 +100,91 @@ body {
 
 .envoltura { max-width: 660px; margin: 0 auto; padding: 16px; }
 
-/* --- Cabecera --- */
-header { padding: 10px 0 22px; display: flex; align-items: flex-start; gap: 12px; }
-header > div { flex: 1; min-width: 0; }
+/* Entrada escalonada de los bloques. Un retardo corto por tarjeta hace que la
+   pantalla se arme en vez de aparecer de golpe; es la diferencia entre una
+   pagina y una app. Se anula si el sistema pide menos movimiento. */
+@keyframes surgir {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+.hero, .panel { animation: surgir .32s cubic-bezier(.22,.61,.36,1) backwards; }
+.panel:nth-of-type(1) { animation-delay: .04s; }
+.panel:nth-of-type(2) { animation-delay: .08s; }
+.panel:nth-of-type(3) { animation-delay: .12s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero, .panel { animation: none; }
+}
+
+/* --- Cabecera ---
+   Lleva el progreso dentro. Un titulo que solo dice el nombre de la pantalla
+   deja de aportar al segundo de abrirla; el estado, en cambio, se consulta
+   cada pocos toques. El degradado no es adorno: separa el bloque de contexto
+   del area donde se trabaja, sin una linea divisoria mas. */
+.hero {
+  position: relative;
+  margin-bottom: 16px;
+  padding: 20px;
+  border-radius: var(--radio);
+  background:
+    radial-gradient(120% 140% at 100% 0%, #2f6fd0 0%, rgba(47,111,208,0) 55%),
+    linear-gradient(160deg, #1d58ae 0%, #15407e 100%);
+  color: #fff;
+  box-shadow: var(--sombra-alta);
+  overflow: hidden;
+}
+.hero-fila {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.hero-texto { min-width: 0; }
+.hero-rotulo {
+  margin: 0 0 3px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.62);
+}
+.hero h1 {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+/* La cifra grande es lo unico que se mira al volver a la pantalla, asi que
+   manda sobre el titulo en tamano. */
+.hero-cifra {
+  flex-shrink: 0;
+  display: flex;
+  align-items: baseline;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+}
+.hero-cifra strong { font-size: 2.1rem; font-weight: 750; line-height: 1; }
+.hero-cifra span {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.55);
+}
+.hero-pie {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+.hero-pie strong { color: #fff; font-variant-numeric: tabular-nums; }
+.hero-pie .fallas { color: #ffc4bd; font-weight: 650; }
+
+/* El riel dentro del degradado necesita su propio contraste: el gris de la
+   version clara desaparece sobre azul. */
+.hero .progreso-riel { background: rgba(255, 255, 255, 0.18); height: 8px; }
+.hero .progreso-lleno { background: #fff; }
+.hero .progreso-lleno[data-lleno="si"] { background: #5ee29a; }
+
 h1 {
   margin: 0 0 4px;
   font-size: 1.6rem;
@@ -100,17 +198,29 @@ h1 {
   background: var(--panel);
   border: 1px solid var(--linea);
   border-radius: var(--radio);
-  padding: 18px;
+  padding: 20px;
   margin-bottom: 14px;
   box-shadow: var(--sombra);
 }
+/* Un punto de color delante del titulo. Cuesta nada y convierte una lista de
+   rotulos grises en secciones que se distinguen de reojo al hacer scroll. */
 .panel h2 {
-  margin: 0 0 16px;
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 18px;
+  font-size: 0.74rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.09em;
   color: var(--suave);
-  font-weight: 700;
+  font-weight: 750;
+}
+.panel h2::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--acento-claro);
+  flex-shrink: 0;
 }
 .panel .nota { margin: -8px 0 16px; font-size: 0.9rem; }
 
@@ -190,11 +300,19 @@ select {
    El scroll pasa a caber en una pantalla y el avance se vuelve evidente sin
    tener que explicarlo. */
 .bloque {
-  border: 1.5px solid var(--linea);
+  border: 1px solid var(--linea);
   border-radius: var(--radio-chico);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   background: var(--panel);
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 28, 44, 0.04);
+  transition: box-shadow .2s, border-color .2s;
+}
+/* El abierto se eleva sobre los demas. Es la senal de "estas aqui" que un
+   acordeon necesita para no parecer una lista de botones. */
+.bloque[data-abierto="si"] {
+  box-shadow: var(--sombra);
+  border-color: var(--linea-fuerte);
 }
 .bloque:last-child { margin-bottom: 0; }
 
@@ -279,7 +397,26 @@ select {
   color: #fff;
 }
 
-.bloque-cuerpo { padding: 2px 10px 10px; }
+/* Abrir y cerrar se anima con grid-template-rows de 0fr a 1fr: es la unica
+   forma de interpolar hacia una altura 'auto' sin medirla en JS. El hijo
+   necesita min-height:0 y overflow:hidden o se desborda durante la
+   transicion. Un [hidden] seco daba un salto que hacia perder el sitio. */
+.bloque-envoltura {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .26s cubic-bezier(.22,.61,.36,1);
+}
+.bloque[data-abierto="si"] .bloque-envoltura { grid-template-rows: 1fr; }
+.bloque-cuerpo {
+  min-height: 0;
+  overflow: hidden;
+}
+.bloque-cuerpo > :first-child { margin-top: 2px; }
+.bloque-interior { padding: 2px 10px 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bloque-envoltura { transition: none; }
+}
 
 /* --- "Todo bien" del grupo ---
    Marca de una vez los pendientes de ESTE grupo, no de la lista entera. Lo de
@@ -291,17 +428,18 @@ select {
   justify-content: center;
   gap: 8px;
   width: 100%;
-  min-height: 44px;
-  margin-bottom: 8px;
-  padding: 0 12px;
-  border: 1.5px dashed var(--ok-borde);
-  border-radius: var(--radio-chico);
+  min-height: 46px;
+  margin-bottom: 10px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 99px;
   background: var(--ok-suave);
   color: var(--ok);
-  font: 650 0.88rem/1 system-ui, sans-serif;
+  font: 650 0.87rem/1.2 system-ui, sans-serif;
   cursor: pointer;
+  transition: background-color .15s, transform .12s;
 }
-.todo-bien:active { transform: scale(0.99); }
+.todo-bien:active { transform: scale(0.97); background: var(--ok-borde); }
 .todo-bien[hidden] { display: none; }
 
 /* --- Item del checklist ---
@@ -309,15 +447,18 @@ select {
    como segundo hijo cuando se marca Falla, y con flex se metia como tercera
    columna: aplastaba el texto y lo encimaba con el switch. Con grid cae en su
    propia fila, a todo el ancho, que es donde se puede escribir. */
+/* Sin borde: dentro del bloque ya hay un contenedor, y encerrar cada punto en
+   otro recuadro es lo que daba el aspecto de formulario viejo. Los separa el
+   fondo, que ademas deja el color del estado como la unica senal fuerte. */
 .item {
   display: grid;
   gap: 10px;
-  padding: 8px 10px;
-  margin-bottom: 6px;
-  border: 1.5px solid var(--linea);
-  border-radius: var(--radio-chico);
-  background: var(--panel);
-  transition: background-color .15s, border-color .15s;
+  padding: 7px 10px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  border-radius: var(--radio-mini);
+  background: transparent;
+  transition: background-color .18s, border-color .18s;
 }
 .item:last-child { margin-bottom: 0; }
 
@@ -361,35 +502,40 @@ select {
    "Falla" escritos repetian 80 veces lo que la forma y el color ya dicen, y
    cada palabra costaba ancho que el texto necesitaba. El rotulo sigue ahi para
    el lector de pantalla. */
-.switch { display: flex; gap: 6px; flex-shrink: 0; }
+.switch { display: flex; gap: 7px; flex-shrink: 0; }
 .switch button {
   /* 48px de lado: es el objetivo tactil que se acierta sin precision, con el
      telefono en una mano y de pie junto al vehiculo. No baja de ahi. */
   width: 48px;
   height: 48px;
   padding: 0;
-  font: 700 1.15rem/1 system-ui, sans-serif;
-  border: 1.5px solid var(--linea-fuerte);
-  border-radius: var(--radio-chico);
-  background: var(--campo);
+  font: 700 1.2rem/1 system-ui, sans-serif;
+  border: 1.5px solid var(--linea);
+  /* Circulos. Dos cuadrados junto a un texto se leen como "otro campo mas";
+     el circulo se lee como un control, que es lo que son. */
+  border-radius: 50%;
+  background: var(--fondo);
   color: var(--tenue);
   cursor: pointer;
-  transition: background-color .12s, border-color .12s, color .12s, opacity .12s;
+  transition: background-color .15s, border-color .15s, color .15s,
+              opacity .15s, transform .12s;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.switch button:active { transform: scale(0.94); }
+.switch button:active { transform: scale(0.88); }
 
 .switch button[aria-pressed="true"][data-valor="ok"] {
   background: var(--ok-claro);
   border-color: var(--ok-claro);
   color: #fff;
+  box-shadow: 0 0 0 4px var(--ok-suave);
 }
 .switch button[aria-pressed="true"][data-valor="mal"] {
   background: var(--mal-claro);
   border-color: var(--mal-claro);
   color: #fff;
+  box-shadow: 0 0 0 4px var(--mal-suave);
 }
 
 /* El no elegido se apaga, para que de un vistazo se lea cual quedo. */
@@ -446,13 +592,22 @@ select {
 }
 
 /* --- Barra fija de envio --- */
+/* Fondo translucido con desenfoque: deja ver que la lista sigue debajo, asi
+   la barra se lee como algo que flota sobre el contenido y no como el final de
+   la pagina. El color opaco queda de respaldo donde no hay backdrop-filter. */
 .barra {
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  background: var(--panel);
-  border-top: 1px solid var(--linea);
+  background: rgba(255, 255, 255, 0.86);
+  border-top: 1px solid rgba(16, 28, 44, 0.07);
   box-shadow: var(--sombra-barra);
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .barra {
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
 }
 .barra-interna {
   max-width: 660px; margin: 0 auto;
@@ -484,21 +639,25 @@ select {
 
 /* --- Botones --- */
 button.primario {
-  font: 700 1rem/1 system-ui, sans-serif;
+  font: 700 1rem/1.2 system-ui, sans-serif;
   padding: 15px 24px;
-  min-height: 52px;
+  min-height: 56px;
   border: 0;
-  border-radius: var(--radio-chico);
-  background: var(--acento-claro);
+  border-radius: 99px;
+  background: linear-gradient(180deg, #2a66c4 0%, #1a4fa0 100%);
   color: #fff;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background-color .12s, opacity .12s;
+  box-shadow: 0 6px 16px -6px rgba(26, 79, 160, 0.55);
+  transition: background-color .15s, box-shadow .15s, transform .12s;
 }
-button.primario:active { transform: scale(0.98); }
+button.primario:active { transform: scale(0.985); }
+/* Apagado pero legible: un boton desactivado que no se puede leer obliga a
+   adivinar por que no deja seguir. El rotulo dice cuanto falta. */
 button.primario:disabled {
-  background: var(--linea-fuerte);
-  color: var(--tenue);
+  background: var(--linea);
+  color: var(--suave);
+  box-shadow: none;
   cursor: not-allowed;
 }
 button.primario.ancho { width: 100%; }

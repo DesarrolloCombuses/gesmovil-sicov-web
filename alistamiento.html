@@ -19,11 +19,24 @@
 <div class="cinta" id="cinta-conexion" hidden></div>
 
 <div class="envoltura">
-  <header>
-    <div>
-      <h1>Alistamiento diario</h1>
-      <p class="sub">Verificación previa a la operación del vehículo</p>
+  <!-- La cabecera lleva el progreso dentro. Antes el titulo iba arriba y el
+       contador abajo en la barra: el conductor tenia que mirar a dos sitios
+       para saber como va, y el titulo ocupaba una franja que no decia nada
+       despues del primer segundo. -->
+  <header class="hero">
+    <div class="hero-fila">
+      <div class="hero-texto">
+        <p class="hero-rotulo">Alistamiento diario</p>
+        <h1>Revisión del vehículo</h1>
+      </div>
+      <div class="hero-cifra" aria-hidden="true">
+        <strong id="hero-hechas">0</strong><span id="hero-total">/0</span>
+      </div>
     </div>
+    <div class="progreso-riel" role="progressbar" aria-label="Puntos verificados">
+      <div class="progreso-lleno" id="progreso-lleno"></div>
+    </div>
+    <p class="hero-pie" id="progreso-texto" aria-live="polite">Sin empezar</p>
   </header>
 
   <div id="cargando" class="cargando">Cargando…</div>
@@ -81,15 +94,13 @@
   <p class="pie">SICOV · <span id="version">…</span></p>
 </div>
 
+<!-- Solo el boton: el progreso ya vive en la cabecera. El rotulo del boton
+     dice que falta, para que no haya que subir a mirar por que esta apagado. -->
 <div class="barra" id="barra" hidden>
   <div class="barra-interna">
-    <div class="progreso">
-      <div class="progreso-texto" id="progreso-texto" aria-live="polite"></div>
-      <div class="progreso-riel" role="progressbar" aria-label="Puntos verificados">
-        <div class="progreso-lleno" id="progreso-lleno"></div>
-      </div>
-    </div>
-    <button type="button" class="primario" id="enviar" disabled>Registrar</button>
+    <button type="button" class="primario ancho" id="enviar" disabled>
+      <span id="enviar-texto">Registrar alistamiento</span>
+    </button>
   </div>
 </div>
 

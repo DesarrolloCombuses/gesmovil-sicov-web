@@ -153,9 +153,18 @@
 
       cab.append(paso, titulo, cuenta, flecha);
 
+      // Tres capas para poder animar: la envoltura hace de grid 0fr/1fr, el
+      // cuerpo recorta, y el interior lleva el padding. Con el padding en el
+      // cuerpo, la altura nunca llega a cero y el bloque cerrado deja un borde
+      // visible.
+      const envoltura = document.createElement("div");
+      envoltura.className = "bloque-envoltura";
       const cuerpo = document.createElement("div");
       cuerpo.className = "bloque-cuerpo";
-      cuerpo.hidden = true;
+      const interior = document.createElement("div");
+      interior.className = "bloque-interior";
+      cuerpo.appendChild(interior);
+      envoltura.appendChild(cuerpo);
 
       cab.addEventListener("click", () => abrirGrupo(nombre, !(caja.dataset.abierto === "si")));
 
@@ -169,16 +178,16 @@
       todoBien.className = "todo-bien";
       todoBien.textContent = "✓  Todo bien en " + nombre.toLowerCase();
       todoBien.addEventListener("click", () => marcarGrupoOk(nombre));
-      cuerpo.appendChild(todoBien);
+      interior.appendChild(todoBien);
 
       for (const act of actividades) {
-        cuerpo.appendChild(construirItem(act));
+        interior.appendChild(construirItem(act));
       }
 
-      caja.append(cab, cuerpo);
+      caja.append(cab, envoltura);
       cont.appendChild(caja);
 
-      estado.grupos.set(nombre, { caja, cab, cuerpo, cuenta, todoBien, actividades });
+      estado.grupos.set(nombre, { caja, cab, cuerpo: interior, cuenta, todoBien, actividades });
     });
 
     // El primero abierto: el formulario debe empezar mostrando algo que hacer,
@@ -236,9 +245,13 @@
   function abrirGrupo(nombre, abrir) {
     for (const [n, g] of estado.grupos) {
       const abierto = abrir && n === nombre;
+      // Sin [hidden]: la altura la anima el CSS con grid-template-rows, y un
+      // display:none corta la transicion. Para el lector de pantalla lo dice
+      // aria-expanded, y inert evita que el teclado entre en lo cerrado.
       g.caja.dataset.abierto = abierto ? "si" : "no";
-      g.cuerpo.hidden = !abierto;
       g.cab.setAttribute("aria-expanded", String(abierto));
+      if (abierto) g.cuerpo.removeAttribute("inert");
+      else g.cuerpo.setAttribute("inert", "");
     }
   }
 
@@ -321,13 +334,23 @@
     const hechas = estado.marcas.size;
     const fallas = [...estado.marcas.values()].filter((v) => v === "mal").length;
 
-    // Se arma con nodos, no con innerHTML: las descripciones y los rotulos
-    // vienen de la base, y aqui no hace falta interpretar HTML para nada.
+    // La cifra grande de la cabecera.
+    $("hero-hechas").textContent = String(hechas);
+    $("hero-total").textContent = "/" + total;
+
+    // Y la linea de debajo, armada con nodos y no con innerHTML: las
+    // descripciones vienen de la base y aqui no hace falta interpretar HTML.
     const t = $("progreso-texto");
     t.textContent = "";
-    const n = document.createElement("strong");
-    n.textContent = String(hechas);
-    t.append(n, document.createTextNode(` de ${total} verificados`));
+    if (hechas === 0) {
+      t.textContent = `Sin empezar · ${total} puntos por verificar`;
+    } else if (hechas < total) {
+      const n = document.createElement("strong");
+      n.textContent = String(total - hechas);
+      t.append(document.createTextNode("Faltan "), n, document.createTextNode(" puntos"));
+    } else {
+      t.textContent = "Todo verificado";
+    }
     if (fallas) {
       const f = document.createElement("span");
       f.className = "fallas";
@@ -360,7 +383,16 @@
       g.todoBien.hidden = completo;
     }
 
-    $("enviar").disabled = estado.enviando || total === 0 || hechas < total;
+    const listo = total > 0 && hechas === total;
+    $("enviar").disabled = estado.enviando || !listo;
+    const rotulo = $("enviar-texto");
+    if (rotulo && !estado.enviando) {
+      // Un boton apagado sin explicacion obliga a adivinar por que no deja
+      // seguir; con la cuenta encima, la respuesta esta donde se mira.
+      rotulo.textContent = listo
+        ? "Registrar alistamiento"
+        : `Faltan ${total - hechas} de ${total} puntos`;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -558,7 +590,9 @@
 
     estado.enviando = true;
     $("enviar").disabled = true;
-    $("enviar").textContent = "Enviando…";
+    // Al span, no al boton: escribir sobre el boton borraria el span y la
+    // siguiente actualizacion del progreso no tendria donde escribir.
+    $("enviar-texto").textContent = "Enviando…";
 
     try {
       const resp = await fetch(RUTA + "/registrar", {
@@ -630,7 +664,7 @@
       });
     } catch (e) {
       estado.enviando = false;
-      $("enviar").textContent = "Registrar";
+      $("enviar-texto").textContent = "Registrar alistamiento";
       actualizarProgreso();
       mostrarAviso(e.message || "No se pudo enviar. Revisa tu señal e intenta de nuevo.");
     }

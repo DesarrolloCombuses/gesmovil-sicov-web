@@ -41,6 +41,15 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.6.0 -- rediseno visual. El titulo deja su franja propia y la cabecera pasa
+// a ser un panel con degradado que lleva el progreso dentro: el nombre de la
+// pantalla deja de aportar al segundo de abrirla, el estado se consulta cada
+// pocos toques. El acordeon se anima con grid-template-rows 0fr/1fr, que es la
+// forma de interpolar hacia una altura 'auto' sin medirla en JS. Los puntos
+// pierden el recuadro (ya estan dentro de uno) y los botones pasan a circulos.
+// La barra inferior queda translucida con desenfoque y su boton dice cuantos
+// puntos faltan, en vez de apagarse sin explicar por que.
+//
 // 1.5.0 -- el checklist pasa a acordeon. Los 40 puntos en lista plana median
 // casi 3900px: cinco pantallas de telefono de scroll, sin forma de saber por
 // donde se iba. Ahora se abre un grupo a la vez y al terminarlo se abre el
@@ -68,7 +77,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.5.0";
+const VERSION = "1.6.0";
 
 const CACHE = `sicov-v${VERSION}`;
 
