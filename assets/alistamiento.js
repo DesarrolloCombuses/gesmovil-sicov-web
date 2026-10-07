@@ -21,6 +21,10 @@
     // placa -> interno, para que el comprobante diga "EQR790 · interno 717".
     // El conductor reconoce su bus por el interno, no por la placa.
     internos: new Map(),
+    // nombre del grupo -> { caja, cuerpo, cuenta, todoBien, actividades }.
+    // El acordeon consulta esto en cada marca; recorrer el DOM 40 veces por
+    // toque se sentia en los telefonos viejos.
+    grupos: new Map(),
     enviando: false,
     enviado: false,
   };
@@ -97,6 +101,7 @@
   function pintarChecklist() {
     const cont = $("checklist");
     cont.innerHTML = "";
+    estado.grupos.clear();
 
     if (estado.actividades.length === 0) {
       const p = document.createElement("p");
@@ -106,73 +111,173 @@
       return;
     }
 
-    let grupoActual = null;
+    // Se agrupa primero para saber cuantos grupos hay antes de pintar: el
+    // numero de paso de la cabecera necesita el total.
+    const porGrupo = new Map();
     for (const act of estado.actividades) {
-      if (act.grupo && act.grupo !== grupoActual) {
-        grupoActual = act.grupo;
-
-        const cab = document.createElement("div");
-        cab.className = "grupo";
-
-        const nombre = document.createElement("span");
-        nombre.className = "grupo-nombre";
-        nombre.textContent = act.grupo;
-
-        // Contador por grupo. Con 40 puntos en 9 bloques, "cuanto me falta de
-        // este" no se responde contando a ojo.
-        const cuenta = document.createElement("span");
-        cuenta.className = "grupo-cuenta";
-        cuenta.dataset.cuenta = act.grupo;
-
-        cab.append(nombre, cuenta);
-        cont.appendChild(cab);
-      }
-
-      const tarjeta = document.createElement("div");
-      tarjeta.className = "item";
-      tarjeta.dataset.grupo = act.grupo || "";
-
-      // El texto y el switch van juntos en una fila propia, y la tarjeta es un
-      // grid de una columna. Antes la tarjeta ERA la fila, asi que el campo de
-      // observacion entraba como tercera columna y encimaba el texto.
-      const fila = document.createElement("div");
-      fila.className = "item-fila";
-
-      const texto = document.createElement("div");
-      texto.className = "item-texto";
-      texto.textContent = act.descripcion;
-      texto.id = "act-" + act.id;
-
-      const sw = document.createElement("div");
-      sw.className = "switch";
-      sw.setAttribute("role", "group");
-      sw.setAttribute("aria-labelledby", texto.id);
-
-      for (const [valor, rotulo, glifo] of [["ok", "OK", "✓"], ["mal", "Falla", "!"]]) {
-        const b = document.createElement("button");
-        b.type = "button";
-        b.dataset.valor = valor;
-        b.setAttribute("aria-pressed", "false");
-        // El glifo ademas del rotulo: a contraluz se distingue antes una forma
-        // que una palabra. Va en un span aparte para poder darle su tamano.
-        const g = document.createElement("span");
-        g.className = "glifo";
-        g.setAttribute("aria-hidden", "true");
-        g.textContent = glifo;
-        b.append(g, document.createTextNode(rotulo));
-        b.addEventListener("click", () => marcar(act.id, valor, sw, tarjeta));
-        sw.appendChild(b);
-      }
-
-      fila.append(texto, sw);
-      tarjeta.appendChild(fila);
-      cont.appendChild(tarjeta);
+      const g = act.grupo || "Otros";
+      if (!porGrupo.has(g)) porGrupo.set(g, []);
+      porGrupo.get(g).push(act);
     }
+    const nombres = [...porGrupo.keys()];
+
+    nombres.forEach((nombre, i) => {
+      const actividades = porGrupo.get(nombre);
+
+      const caja = document.createElement("section");
+      caja.className = "bloque";
+      caja.dataset.grupo = nombre;
+
+      // --- Cabecera: abre y cierra ---
+      const cab = document.createElement("button");
+      cab.type = "button";
+      cab.className = "bloque-cab";
+      cab.setAttribute("aria-expanded", "false");
+
+      const paso = document.createElement("span");
+      paso.className = "bloque-paso";
+      paso.textContent = String(i + 1);
+
+      const titulo = document.createElement("span");
+      titulo.className = "bloque-nombre";
+      titulo.textContent = nombre;
+
+      const cuenta = document.createElement("span");
+      cuenta.className = "bloque-cuenta";
+      cuenta.textContent = "0/" + actividades.length;
+
+      const flecha = document.createElement("span");
+      flecha.className = "bloque-flecha";
+      flecha.setAttribute("aria-hidden", "true");
+      flecha.textContent = "▾";
+
+      cab.append(paso, titulo, cuenta, flecha);
+
+      const cuerpo = document.createElement("div");
+      cuerpo.className = "bloque-cuerpo";
+      cuerpo.hidden = true;
+
+      cab.addEventListener("click", () => abrirGrupo(nombre, !(caja.dataset.abierto === "si")));
+
+      // --- "Todo bien": marca OK lo que quede pendiente de ESTE grupo ---
+      // Por grupo y no global a proposito. Un boton unico para los 40 puntos
+      // convierte el alistamiento en un solo toque, y lo que queda firmado es
+      // que se revisaron 40 cosas. Por grupo hay que recorrer los nueve, que
+      // es justo el recorrido que el formulario debe provocar.
+      const todoBien = document.createElement("button");
+      todoBien.type = "button";
+      todoBien.className = "todo-bien";
+      todoBien.textContent = "✓  Todo bien en " + nombre.toLowerCase();
+      todoBien.addEventListener("click", () => marcarGrupoOk(nombre));
+      cuerpo.appendChild(todoBien);
+
+      for (const act of actividades) {
+        cuerpo.appendChild(construirItem(act));
+      }
+
+      caja.append(cab, cuerpo);
+      cont.appendChild(caja);
+
+      estado.grupos.set(nombre, { caja, cab, cuerpo, cuenta, todoBien, actividades });
+    });
+
+    // El primero abierto: el formulario debe empezar mostrando algo que hacer,
+    // no nueve filas cerradas.
+    if (nombres.length > 0) abrirGrupo(nombres[0], true);
 
     actualizarProgreso();
   }
 
-  function marcar(id, valor, sw, tarjeta) {
+  /** Una tarjeta de punto, con su switch OK / Falla. */
+  function construirItem(act) {
+    const tarjeta = document.createElement("div");
+    tarjeta.className = "item";
+    tarjeta.dataset.grupo = act.grupo || "Otros";
+    tarjeta.dataset.id = String(act.id);
+
+    // El texto y el switch van juntos en una fila propia, y la tarjeta es un
+    // grid de una columna. Antes la tarjeta ERA la fila, asi que el campo de
+    // observacion entraba como tercera columna y encimaba el texto.
+    const fila = document.createElement("div");
+    fila.className = "item-fila";
+
+    const texto = document.createElement("div");
+    texto.className = "item-texto";
+    texto.textContent = act.descripcion;
+    texto.id = "act-" + act.id;
+
+    const sw = document.createElement("div");
+    sw.className = "switch";
+    sw.setAttribute("role", "group");
+    sw.setAttribute("aria-labelledby", texto.id);
+
+    for (const [valor, rotulo, glifo] of [["ok", "Sin novedad", "✓"], ["mal", "Con falla", "!"]]) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.valor = valor;
+      b.setAttribute("aria-pressed", "false");
+      // Solo el glifo: con el nombre del punto al lado, escribir "OK" y
+      // "Falla" en cada uno de los 40 repetia lo que la forma y el color ya
+      // dicen, y se comia el ancho del texto. El rotulo va en aria-label, que
+      // es lo que lee el lector de pantalla.
+      b.setAttribute("aria-label", rotulo);
+      b.textContent = glifo;
+      b.addEventListener("click", () => marcar(act.id, valor, sw, tarjeta));
+      sw.appendChild(b);
+    }
+
+    fila.append(texto, sw);
+    tarjeta.appendChild(fila);
+    return tarjeta;
+  }
+
+  /** Abre un grupo y cierra los demas. Uno a la vez: con dos abiertos vuelve
+      el scroll largo que es justo lo que el acordeon viene a resolver. */
+  function abrirGrupo(nombre, abrir) {
+    for (const [n, g] of estado.grupos) {
+      const abierto = abrir && n === nombre;
+      g.caja.dataset.abierto = abierto ? "si" : "no";
+      g.cuerpo.hidden = !abierto;
+      g.cab.setAttribute("aria-expanded", String(abierto));
+    }
+  }
+
+  /** Marca OK los pendientes del grupo. No toca lo ya marcado: si el conductor
+      señaló una falla y despues da "todo bien", esa falla se queda. */
+  function marcarGrupoOk(nombre) {
+    const g = estado.grupos.get(nombre);
+    if (!g) return;
+    for (const act of g.actividades) {
+      if (estado.marcas.has(act.id)) continue;
+      const tarjeta = g.cuerpo.querySelector('.item[data-id="' + act.id + '"]');
+      const sw = tarjeta && tarjeta.querySelector(".switch");
+      if (sw) marcar(act.id, "ok", sw, tarjeta, true);
+    }
+    actualizarProgreso();
+    pasarAlSiguiente(nombre);
+  }
+
+  /** Cierra el grupo resuelto y abre el primero que siga pendiente. El avance
+      se explica solo: al terminar un bloque aparece el que falta. */
+  function pasarAlSiguiente(desde) {
+    const nombres = [...estado.grupos.keys()];
+    const i = nombres.indexOf(desde);
+    const pendiente = nombres
+      .slice(i + 1)
+      .concat(nombres.slice(0, i))
+      .find((n) => {
+        const g = estado.grupos.get(n);
+        return g.actividades.some((a) => !estado.marcas.has(a.id));
+      });
+    if (pendiente) {
+      abrirGrupo(pendiente, true);
+      estado.grupos.get(pendiente).caja.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } else {
+      abrirGrupo(null, false);
+    }
+  }
+
+  function marcar(id, valor, sw, tarjeta, enLote) {
     estado.marcas.set(id, valor);
     for (const b of sw.querySelectorAll("button")) {
       b.setAttribute("aria-pressed", String(b.dataset.valor === valor));
@@ -195,7 +300,20 @@
       obs.remove();
     }
 
+    // En lote el llamador actualiza y avanza una sola vez al final: hacerlo
+    // por punto recalculaba los nueve grupos en cada iteracion.
+    if (enLote) return;
+
     actualizarProgreso();
+
+    // Una falla deja el grupo abierto: el conductor acaba de encontrar algo y
+    // probablemente quiere escribir que fue. Solo se avanza al completar el
+    // grupo sin novedades pendientes.
+    if (valor === "ok") {
+      const grupo = tarjeta.dataset.grupo;
+      const g = estado.grupos.get(grupo);
+      if (g && g.actividades.every((a) => estado.marcas.has(a.id))) pasarAlSiguiente(grupo);
+    }
   }
 
   function actualizarProgreso() {
@@ -224,14 +342,22 @@
     if (total > 0 && hechas === total) lleno.dataset.lleno = "si";
     else delete lleno.dataset.lleno;
 
-    // Contadores por grupo.
-    for (const chip of document.querySelectorAll("[data-cuenta]")) {
-      const grupo = chip.dataset.cuenta;
-      const delGrupo = estado.actividades.filter((a) => (a.grupo || "") === grupo);
-      const marcadas = delGrupo.filter((a) => estado.marcas.has(a.id)).length;
-      chip.textContent = `${marcadas}/${delGrupo.length}`;
-      if (delGrupo.length > 0 && marcadas === delGrupo.length) chip.dataset.completo = "si";
-      else delete chip.dataset.completo;
+    // Estado de cada grupo, para que la cabecera cerrada ya lo diga todo.
+    for (const [, g] of estado.grupos) {
+      const marcadas = g.actividades.filter((a) => estado.marcas.has(a.id)).length;
+      const conFalla = g.actividades.some((a) => estado.marcas.get(a.id) === "mal");
+      const completo = marcadas === g.actividades.length;
+
+      g.cuenta.textContent = `${marcadas}/${g.actividades.length}`;
+      if (completo) g.caja.dataset.completo = "si";
+      else delete g.caja.dataset.completo;
+      // El rojo gana al verde: un grupo completo con una falla dentro es lo
+      // que hay que ver, no un grupo terminado.
+      if (conFalla) g.caja.dataset.falla = "si";
+      else delete g.caja.dataset.falla;
+
+      // Sin pendientes no hay nada que marcar en lote.
+      g.todoBien.hidden = completo;
     }
 
     $("enviar").disabled = estado.enviando || total === 0 || hechas < total;

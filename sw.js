@@ -41,6 +41,14 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.5.0 -- el checklist pasa a acordeon. Los 40 puntos en lista plana median
+// casi 3900px: cinco pantallas de telefono de scroll, sin forma de saber por
+// donde se iba. Ahora se abre un grupo a la vez y al terminarlo se abre el
+// siguiente solo. Cada grupo trae un "todo bien" que marca sus pendientes; es
+// por grupo y no global a proposito, porque un boton unico para los 40
+// convertiria en un solo toque un documento que certifica haber revisado el
+// vehiculo. Los botones quedan en glifo sin rotulo, con aria-label.
+//
 // 1.4.0 -- modal de comprobante al registrar, y modal de aviso cuando la placa
 // elegida ya se alisto hoy (antes era una linea de texto en el flujo, facil de
 // pasar por alto despues de llenar 40 puntos).
@@ -60,7 +68,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.4.0";
+const VERSION = "1.5.0";
 
 const CACHE = `sicov-v${VERSION}`;
 
