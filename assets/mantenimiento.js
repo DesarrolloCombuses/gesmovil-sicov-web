@@ -40,7 +40,18 @@ async function token() {
 
 async function arrancar() {
   if (CONFIG.SUPABASE_ANON_KEY === "PEGAR_AQUI_LA_ANON_KEY") {
-    mostrarAviso("Falta configurar SUPABASE_ANON_KEY en assets/comun.js.", "info");
+    // Dos mensajes para dos lectores. En pantalla, el del taller, que no puede
+    // hacer nada con el nombre de una constante y necesita saber a quien
+    // llamar. En la consola, el detalle para quien si puede arreglarlo.
+    mostrarAviso(
+      "Esta aplicación todavía no está configurada para registrar mantenimientos. " +
+        "Avisa al área de desarrollo de COMBUSES; el alistamiento diario sí funciona.",
+      "info",
+    );
+    console.error(
+      "[sicov] falta SUPABASE_ANON_KEY en web/assets/comun.js. " +
+        "Se copia de Supabase > Settings > API > anon public.",
+    );
     return;
   }
   // El login necesita red: sin ella no hay sesion que validar ni catalogo que
