@@ -28,7 +28,10 @@
 :root {
   --tinta: #16202c;
   --suave: #5b6b7d;
-  --tenue: #93a1b2;
+  /* #93a1b2 daba 2.63:1 sobre blanco. AA pide 4.5:1 para texto normal, y este
+     gris lo usan las pistas, los contadores y las notas -- texto chico que ya
+     cuesta leer. #616e81 da 5.18:1 sin cambiar el tono. */
+  --tenue: #616e81;
   --linea: #e3e8ef;
   --linea-fuerte: #cdd6e0;
   --fondo: #f1f4f8;
@@ -89,7 +92,13 @@ body {
      formas mas modernas en Android. Sin fuente web: la app tiene que abrir
      igual sin red, y una fuente que no carga deja el formulario saltando de
      tamano justo cuando el conductor empieza a tocar. */
-  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+  /* 17px y no 16. Todo lo demas se mide en rem, asi que subir la base sube el
+     documento entero. Lo leen conductores adultos, de pie junto al bus y a
+     menudo a contraluz: 16px es el minimo para que iOS no haga zoom al
+     enfocar un campo, no un tamano comodo para leer cuarenta renglones.
+     El interlineado sube a 1.55 por lo mismo -- a esta distancia y con
+     movimiento, las lineas apretadas se saltan. */
+  font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
         "Segoe UI", Roboto, system-ui, sans-serif;
   font-feature-settings: "cv11", "ss01";
   -webkit-text-size-adjust: 100%;
@@ -126,9 +135,12 @@ body {
   margin-bottom: 16px;
   padding: 20px;
   border-radius: var(--radio);
+  /* El azul claro era #2f6fd0, y sobre el ni el blanco puro llegaba a 4.5:1
+     (daba 4.88, y el texto secundario al 62% caia a 2.86). Con #1f4d96 el
+     blanco sube a 8.20:1 y el secundario al 80% a 5.88:1. */
   background:
-    radial-gradient(120% 140% at 100% 0%, #2f6fd0 0%, rgba(47,111,208,0) 55%),
-    linear-gradient(160deg, #1d58ae 0%, #15407e 100%);
+    radial-gradient(120% 140% at 100% 0%, #1f4d96 0%, rgba(31,77,150,0) 55%),
+    linear-gradient(160deg, #1a4e9c 0%, #133a72 100%);
   color: #fff;
   box-shadow: var(--sombra-alta);
   overflow: hidden;
@@ -147,7 +159,7 @@ body {
   font-weight: 650;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: rgba(255, 255, 255, 0.62);
+  color: rgba(255, 255, 255, 0.82);
 }
 .hero h1 {
   margin: 0;
@@ -169,12 +181,12 @@ body {
 .hero-cifra span {
   font-size: 1.05rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.80);
 }
 .hero-pie {
   margin: 10px 0 0;
-  font-size: 0.82rem;
-  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.92rem;
+  color: rgba(255, 255, 255, 0.86);
 }
 .hero-pie strong { color: #fff; font-variant-numeric: tabular-nums; }
 .hero-pie .fallas { color: #ffc4bd; font-weight: 650; }
@@ -191,7 +203,7 @@ h1 {
   font-weight: 700;
   letter-spacing: -0.022em;
 }
-.sub { margin: 0; color: var(--suave); font-size: 0.94rem; }
+.sub { margin: 0; color: var(--suave); font-size: 1.01rem; }
 
 /* --- Paneles --- */
 .panel {
@@ -209,9 +221,11 @@ h1 {
   align-items: center;
   gap: 9px;
   margin: 0 0 18px;
-  font-size: 0.74rem;
+  /* Las mayusculas se leen mas despacio que la minuscula, asi que un
+     titulo en versalitas necesita mas cuerpo del que parece. */
+  font-size: 0.84rem;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
   color: var(--suave);
   font-weight: 750;
 }
@@ -227,8 +241,14 @@ h1 {
 /* --- Campos --- */
 label { display: block; margin-bottom: 16px; }
 label:last-child { margin-bottom: 0; }
-.etiqueta { display: block; font-size: 0.88rem; font-weight: 600; margin-bottom: 7px; }
-.pista { display: block; font-size: 0.82rem; color: var(--suave); font-weight: 400; margin-top: 6px; }
+.etiqueta { display: block; font-size: 0.97rem; font-weight: 600; margin-bottom: 8px; }
+.pista {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--suave);
+  font-weight: 400;
+  margin-top: 7px;
+}
 .pista.enlinea { display: inline; margin: 0; font-weight: 400; }
 .pista.bien { color: var(--ok); font-weight: 600; }
 
@@ -292,7 +312,7 @@ select {
   width: 100%;
   padding: 0;
   margin-bottom: 14px;
-  font-size: 0.97rem;
+  font-size: 1.08rem;
   font-weight: 550;
   line-height: 1.42;
   color: var(--tinta);
@@ -378,9 +398,9 @@ select {
 .error-campo {
   display: flex;
   align-items: flex-start;
-  gap: 6px;
-  margin-top: 7px;
-  font-size: 0.85rem;
+  gap: 7px;
+  margin-top: 8px;
+  font-size: 0.94rem;
   line-height: 1.35;
   font-weight: 550;
   color: var(--mal);
@@ -415,7 +435,7 @@ select {
   display: block;
   margin-top: 6px;
   text-align: right;
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   color: var(--tenue);
   font-variant-numeric: tabular-nums;
 }
@@ -467,7 +487,7 @@ select {
   border-top: 1px solid var(--mal-borde);
   background: transparent;
   color: var(--tinta);
-  font: 500 0.92rem/1.35 system-ui, sans-serif;
+  font: 500 1.01rem/1.4 system-ui, sans-serif;
   text-align: left;
   cursor: pointer;
 }
@@ -569,14 +589,14 @@ select {
 .bloque-nombre {
   flex: 1;
   min-width: 0;
-  font-size: 0.95rem;
+  font-size: 1.06rem;
   font-weight: 650;
   line-height: 1.25;
   letter-spacing: -0.01em;
 }
 .bloque-cuenta {
   flex-shrink: 0;
-  font: 700 0.75rem/1 system-ui, sans-serif;
+  font: 700 0.84rem/1 system-ui, sans-serif;
   padding: 5px 9px;
   border-radius: 99px;
   background: var(--fondo);
@@ -653,7 +673,7 @@ select {
   border-radius: 99px;
   background: var(--ok-suave);
   color: var(--ok);
-  font: 650 0.87rem/1.2 system-ui, sans-serif;
+  font: 650 0.97rem/1.25 system-ui, sans-serif;
   cursor: pointer;
   transition: background-color .15s, transform .12s;
 }
@@ -693,9 +713,11 @@ select {
 .item-texto {
   flex: 1 1 58%;
   min-width: 0;
-  font-size: 0.93rem;
+  /* Por encima de la base: es el texto que el conductor lee cuarenta veces,
+     y de los que no puede adivinar por contexto. */
+  font-size: 1.04rem;
   font-weight: 500;
-  line-height: 1.3;
+  line-height: 1.35;
 }
 
 /* Lo ya resuelto recede para que resalte lo que falta. */
@@ -713,8 +735,8 @@ select {
   /* Ocupa la fila entera del grid. Sin esto volveria a competir por el ancho
      con el texto y el switch. */
   grid-column: 1 / -1;
-  min-height: 46px;
-  font-size: 0.94rem;
+  min-height: 50px;
+  font-size: 1rem;
 }
 
 /* --- El switch OK / Falla ---
@@ -1001,7 +1023,7 @@ button.discreto {
   isolation: isolate;
   padding: 10px 16px;
   padding-top: calc(10px + env(safe-area-inset-top, 0px));
-  font: 600 0.85rem/1.3 system-ui, sans-serif;
+  font: 600 0.94rem/1.35 system-ui, sans-serif;
   text-align: center;
 }
 .cinta.sinred { background: #4a3a10; color: #ffe9b0; }
@@ -1084,12 +1106,12 @@ button.discreto {
   line-height: 1.25;
 }
 .version-num {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   font-weight: 650;
   color: var(--tinta);
   font-variant-numeric: tabular-nums;
 }
-.version-nota { font-size: 0.72rem; color: var(--tenue); }
+.version-nota { font-size: 0.8rem; color: var(--tenue); }
 .version-refrescar {
   flex-shrink: 0;
   font-size: 0.95rem;
