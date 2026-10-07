@@ -91,6 +91,165 @@
   }
 
   // -------------------------------------------------------------------------
+  // Validacion
+  // -------------------------------------------------------------------------
+  // El error va pegado a su campo y no en un aviso suelto arriba: con cuatro
+  // campos y cuarenta puntos, "faltan datos" obliga a buscar a mano cual es.
+  //
+  // Nada se marca mientras se escribe por primera vez. Un campo vacio que
+  // todavia no se ha tocado no es un error, es un campo pendiente; pintarlo de
+  // rojo al abrir el formulario convierte el rojo en ruido y deja de leerse.
+  // Despues del primer intento de enviar, el campo ya corregido se limpia solo.
+
+  const CAMPOS = ["placa", "cedula", "kilometraje"];
+  let intentoDeEnvio = false;
+
+  function ponerError(campo, texto) {
+    const el = $("err-" + campo);
+    const control = $(campo);
+    if (el) {
+      el.textContent = texto;
+      el.hidden = false;
+    }
+    if (control) {
+      control.setAttribute("aria-invalid", "true");
+      const caja = control.closest("[data-campo]");
+      if (caja) caja.dataset.error = "si";
+    }
+  }
+
+  function quitarError(campo) {
+    const el = $("err-" + campo);
+    const control = $(campo);
+    if (el) el.hidden = true;
+    if (control) {
+      control.removeAttribute("aria-invalid");
+      const caja = control.closest("[data-campo]");
+      if (caja) delete caja.dataset.error;
+    }
+  }
+
+  /**
+   * Revisa el formulario entero y devuelve lo que falta, en el orden en que
+   * aparece en pantalla. Devolver la lista completa y no el primer fallo es
+   * deliberado: corregir de a uno, con un viaje al servidor entre cada
+   * intento, es lo que hace que un formulario se sienta hostil.
+   */
+  function revisar() {
+    const faltas = [];
+    const placa = $("placa").value;
+    const cedula = soloDigitos($("cedula").value);
+    const nombre = $("nombre").value.trim();
+    const km = soloDigitos($("kilometraje").value);
+
+    if (!placa) {
+      faltas.push({ campo: "placa", texto: "Falta elegir la placa del vehículo." });
+    }
+
+    if (!cedula) {
+      faltas.push({ campo: "cedula", texto: "Falta la cédula del conductor." });
+    } else if (cedula.length < 6) {
+      faltas.push({ campo: "cedula", texto: "La cédula está incompleta: son al menos 6 dígitos." });
+    } else if (!nombre) {
+      // Sin nombre, la cedula no quedo verificada contra la nomina. El
+      // servidor lo rechazaria igual con un 403; se corta aqui para no hacerle
+      // perder el viaje ni el checklist ya marcado.
+      faltas.push({
+        campo: "cedula",
+        texto: "Esa cédula no corresponde a un conductor activo. Revisa el número.",
+      });
+    }
+
+    // El kilometraje es opcional, pero si se escribe tiene que ser creible: un
+    // digito de mas en el tablero convierte el historico del vehiculo en algo
+    // que no sirve para programar el mantenimiento.
+    if (km && Number(km) > 3000000) {
+      faltas.push({
+        campo: "kilometraje",
+        texto: "Ese kilometraje parece muy alto. Revisa el número.",
+      });
+    }
+
+    const sinMarcar = estado.actividades.filter((a) => !estado.marcas.has(a.id));
+    if (sinMarcar.length > 0) {
+      const grupos = [...new Set(sinMarcar.map((a) => a.grupo || "Otros"))];
+      faltas.push({
+        grupo: grupos[0],
+        cuenta: sinMarcar.length,
+        texto:
+          sinMarcar.length === 1
+            ? `Falta 1 punto por verificar, en ${grupos[0].toLowerCase()}.`
+            : `Faltan ${sinMarcar.length} puntos por verificar, en ${grupos.length === 1 ? grupos[0].toLowerCase() : grupos.length + " bloques"}.`,
+      });
+    }
+
+    return faltas;
+  }
+
+  /** Pinta lo que falta. Con `llevar`, ademas desplaza al primero. */
+  function pintarFaltas(faltas, llevar) {
+    for (const campo of CAMPOS) quitarError(campo);
+
+    const caja = $("pendientes");
+    const lista = $("pendientes-lista");
+    lista.textContent = "";
+
+    if (faltas.length === 0) {
+      caja.hidden = true;
+      return;
+    }
+
+    $("pendientes-titulo-texto").textContent =
+      faltas.length === 1 ? "Falta una cosa" : `Faltan ${faltas.length} cosas`;
+
+    for (const f of faltas) {
+      if (f.campo) ponerError(f.campo, f.texto);
+
+      // Cada linea lleva a su sitio. Con el checklist en acordeon, el punto sin
+      // marcar puede estar dentro de un bloque cerrado: ahi no basta con hacer
+      // scroll, hay que abrirlo.
+      const li = document.createElement("li");
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "pendiente";
+      b.textContent = f.texto;
+      b.addEventListener("click", () => irA(f));
+      li.appendChild(b);
+      lista.appendChild(li);
+    }
+
+    caja.hidden = false;
+    if (llevar) irA(faltas[0]);
+  }
+
+  /** Lleva la pantalla a lo que falta, abriendo el bloque si hace falta. */
+  function irA(falta) {
+    if (falta.campo) {
+      const control = $(falta.campo);
+      const caja = control.closest("[data-campo]") || control;
+      caja.scrollIntoView({ behavior: "smooth", block: "center" });
+      // El foco va despues del scroll: en iOS, enfocar un campo lo desplaza
+      // por su cuenta y pelea con el scrollIntoView.
+      if (!control.readOnly && control.tagName !== "SELECT") {
+        setTimeout(() => control.focus({ preventScroll: true }), 320);
+      }
+      return;
+    }
+    if (falta.grupo) {
+      abrirGrupo(falta.grupo, true);
+      const g = estado.grupos.get(falta.grupo);
+      if (g) setTimeout(() => g.caja.scrollIntoView({ behavior: "smooth", block: "center" }), 60);
+    }
+  }
+
+  /** Revalida en vivo, pero solo despues del primer intento de enviar: antes
+      de eso un campo vacio esta pendiente, no equivocado. */
+  function revalidarSiHaceFalta() {
+    if (!intentoDeEnvio) return;
+    pintarFaltas(revisar(), false);
+  }
+
+  // -------------------------------------------------------------------------
   // Checklist
   // -------------------------------------------------------------------------
   // Ningun punto viene premarcado: hay que tocar OK o Falla en cada uno. Un
@@ -267,6 +426,7 @@
       if (sw) marcar(act.id, "ok", sw, tarjeta, true);
     }
     actualizarProgreso();
+    revalidarSiHaceFalta();
     pasarAlSiguiente(nombre);
   }
 
@@ -318,6 +478,7 @@
     if (enLote) return;
 
     actualizarProgreso();
+    revalidarSiHaceFalta();
 
     // Una falla deja el grupo abierto: el conductor acaba de encontrar algo y
     // probablemente quiere escribir que fue. Solo se avanza al completar el
@@ -389,9 +550,12 @@
     if (rotulo && !estado.enviando) {
       // Un boton apagado sin explicacion obliga a adivinar por que no deja
       // seguir; con la cuenta encima, la respuesta esta donde se mira.
-      rotulo.textContent = listo
-        ? "Registrar alistamiento"
-        : `Faltan ${total - hechas} de ${total} puntos`;
+      const sinRed = document.documentElement.dataset.sinred === "si";
+      rotulo.textContent = !listo
+        ? `Faltan ${total - hechas} de ${total} puntos`
+        : sinRed
+          ? "Sin conexión · tocar para reintentar"
+          : "Registrar alistamiento";
     }
   }
 
@@ -409,9 +573,14 @@
   let consultaVigente = 0;
 
   $("cedula").addEventListener("input", (ev) => {
+    // Se limpia el valor en el propio evento y no solo al enviar: asi lo que el
+    // conductor ve escrito es exactamente lo que se va a mandar. Cubre el
+    // pegado desde WhatsApp, que suele traer puntos, espacios y saltos de
+    // linea, y los teclados que insertan un punto al doble espacio.
     const cedula = soloDigitos(ev.target.value);
-    ev.target.value = cedula;
+    if (ev.target.value !== cedula) ev.target.value = cedula;
     const pista = $("pista-conductor");
+    revalidarSiHaceFalta();
 
     clearTimeout(relojCedula);
     // Invalida lo que este en vuelo: si corrigio un digito, la respuesta de la
@@ -504,8 +673,46 @@
   }
 
   // Avisa si la placa ya se alisto hoy, antes de que llene el checklist entero.
+  // Kilometraje: solo digitos y con separador de miles mientras escribe. El
+  // separador no viaja -- se quita antes de enviar -- pero "418.200" se
+  // comprueba de un vistazo contra el tablero y "418200" no.
+  $("kilometraje").addEventListener("input", (ev) => {
+    const crudo = soloDigitos(ev.target.value).slice(0, 7);
+    const conPuntos = crudo.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (ev.target.value !== conPuntos) {
+      // Se conserva la posicion del cursor contando digitos y no caracteres:
+      // al insertar un punto, un cursor fijado por indice salta de sitio.
+      const antes = ev.target.selectionStart;
+      const digitosAntes = soloDigitos(ev.target.value.slice(0, antes)).length;
+      ev.target.value = conPuntos;
+      let i = 0, vistos = 0;
+      while (i < conPuntos.length && vistos < digitosAntes) {
+        if (/\d/.test(conPuntos[i])) vistos++;
+        i++;
+      }
+      try { ev.target.setSelectionRange(i, i); } catch (_) { /* no en todos */ }
+    }
+    revalidarSiHaceFalta();
+  });
+
+  // Contador de observaciones. Aparece al acercarse al limite y no antes: un
+  // "0/500" permanente es ruido en un campo que casi siempre va vacio.
+  const LIMITE_OBS = 500;
+  $("observaciones").addEventListener("input", (ev) => {
+    const usados = ev.target.value.length;
+    const cuenta = $("cuenta-obs");
+    if (usados > LIMITE_OBS - 80) {
+      cuenta.textContent = `${usados} de ${LIMITE_OBS} caracteres`;
+      cuenta.dataset.cerca = usados >= LIMITE_OBS ? "limite" : "si";
+      cuenta.hidden = false;
+    } else {
+      cuenta.hidden = true;
+    }
+  });
+
   $("placa").addEventListener("change", async (ev) => {
     ocultarAviso();
+    revalidarSiHaceFalta();
     const placa = ev.target.value;
     if (!placa) return;
     try {
@@ -552,30 +759,53 @@
   // -------------------------------------------------------------------------
 
   $("enviar").addEventListener("click", async () => {
+    // Puerta de entrada contra el doble envio. La comprobacion de red tarda
+    // hasta seis segundos, y sin esto un segundo toque en esa ventana entraba
+    // como un envio aparte: el servidor rechaza el duplicado por la
+    // restriccion de placa y dia, pero el conductor veria un error sobre un
+    // alistamiento que SI quedo registrado.
+    if (estado.enviando || estado.enviado) return;
+    estado.enviando = true;
+    $("enviar").disabled = true;
+
+    try {
+      await intentarEnviar();
+    } finally {
+      // Si quedo registrado, el estado final lo pone el cierre del modal.
+      if (!estado.enviado) {
+        estado.enviando = false;
+        actualizarProgreso();
+      }
+    }
+  });
+
+  async function intentarEnviar() {
     ocultarAviso();
+
+    // Desde aqui los campos corregidos se limpian solos mientras escribe.
+    intentoDeEnvio = true;
+
+    const faltas = revisar();
+    if (faltas.length > 0) return pintarFaltas(faltas, true);
+    pintarFaltas([], false);
 
     const placa = $("placa").value;
     const cedula = soloDigitos($("cedula").value);
     const nombre = $("nombre").value.trim();
 
-    if (!placa) return mostrarAviso("Selecciona el vehículo.");
-    if (cedula.length < 6) return mostrarAviso("Escribe la cédula del conductor.");
-    // Sin nombre significa que la cedula no quedo verificada contra la nomina.
-    // El servidor lo rechazaria igual con un 403; se corta aqui para no hacerle
-    // perder el viaje ni el checklist ya marcado.
-    if (!nombre) {
-      return mostrarAviso(
-        "La cédula no está verificada. Revisa el número: solo un conductor activo de la nómina puede registrar el alistamiento.",
-      );
-    }
-    if (estado.marcas.size < estado.actividades.length) {
-      return mostrarAviso("Faltan puntos por verificar.");
-    }
-    if (!window.SICOV.hayConexion()) {
+    // La conexion se comprueba de verdad contra el servidor, no con
+    // navigator.onLine: ese solo dice que hay una interfaz de red levantada, y
+    // en el patio de buses el telefono queda enganchado a un wifi sin salida
+    // mas veces de las que queda sin señal. Enviar en ese estado deja el
+    // formulario colgado hasta que vence el tiempo de espera.
+    $("enviar-texto").textContent = "Comprobando conexión…";
+    const hayRed = await window.SICOV.comprobarConexion();
+    if (!hayRed) {
       // Se corta aqui con el formulario intacto: el conductor recupera señal y
-      // vuelve a tocar Registrar sin perder nada.
+      // vuelve a tocar Registrar sin perder nada. El finally de arriba vuelve a
+      // habilitar el boton.
       return mostrarAviso(
-        "Sin conexión. Lo que llenaste sigue aquí: busca señal y vuelve a tocar Registrar.",
+        "Sin conexión con el servidor. Lo que llenaste sigue aquí: busca señal y vuelve a tocar Registrar.",
       );
     }
 
@@ -588,8 +818,6 @@
       };
     });
 
-    estado.enviando = true;
-    $("enviar").disabled = true;
     // Al span, no al boton: escribir sobre el boton borraria el span y la
     // siguiente actualizacion del progreso no tendria donde escribir.
     $("enviar-texto").textContent = "Enviando…";
@@ -663,12 +891,10 @@
         ],
       });
     } catch (e) {
-      estado.enviando = false;
-      $("enviar-texto").textContent = "Registrar alistamiento";
-      actualizarProgreso();
+      // El finally del llamador reactiva el boton y restaura el rotulo.
       mostrarAviso(e.message || "No se pudo enviar. Revisa tu señal e intenta de nuevo.");
     }
-  });
+  }
 
   cargar();
 })();

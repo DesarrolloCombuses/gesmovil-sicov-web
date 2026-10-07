@@ -41,6 +41,25 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.7.0 -- validacion visible y conexion comprobada de verdad.
+//
+// Cada campo dice lo suyo debajo de si mismo, y al intentar enviar aparece una
+// lista de lo que falta donde cada linea lleva a su sitio: con el checklist en
+// acordeon, el punto sin marcar puede estar dentro de un bloque cerrado, donde
+// desplazar la pantalla no alcanza. Nada se pinta de rojo antes del primer
+// intento de enviar: un campo vacio que no se ha tocado esta pendiente, no
+// equivocado, y el rojo prematuro deja de leerse.
+//
+// La conexion se prueba contra el servidor y no con navigator.onLine, que solo
+// dice que hay una interfaz levantada. En el patio el telefono queda enganchado
+// a un wifi sin salida mas veces de las que queda sin señal, y ahi onLine
+// responde true mientras ninguna peticion llega.
+//
+// Control de escritura: la cedula se limpia en el propio evento (cubre el
+// pegado con puntos desde WhatsApp), el kilometraje se formatea con separador
+// de miles conservando la posicion del cursor, y las observaciones avisan al
+// acercarse al limite.
+//
 // 1.6.0 -- rediseno visual. El titulo deja su franja propia y la cabecera pasa
 // a ser un panel con degradado que lleva el progreso dentro: el nombre de la
 // pantalla deja de aportar al segundo de abrirla, el estado se consulta cada
@@ -77,7 +96,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.6.0";
+const VERSION = "1.7.0";
 
 const CACHE = `sicov-v${VERSION}`;
 

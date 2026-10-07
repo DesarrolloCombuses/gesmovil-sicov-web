@@ -175,20 +175,87 @@
   // para mandarlo luego acabaria en duplicados o en un "crei que lo envie".
   // Por eso la cinta dice exactamente eso y lo escrito no se pierde.
 
+  // navigator.onLine solo dice que hay una interfaz de red levantada. En el
+  // patio, el telefono queda enganchado a un wifi sin salida mas veces de las
+  // que queda sin señal, y ahi onLine responde true mientras ninguna peticion
+  // llega. Por eso ademas se prueba contra el servidor de verdad.
+  //
+  // La prueba es un HEAD al endpoint publico con un tiempo de espera corto: si
+  // responde cualquier cosa, incluido un error, la red funciona. Lo que
+  // interesa es que el paquete haya ido y vuelto, no que la respuesta sea 200.
+  const TIEMPO_PRUEBA_MS = 6000;
+  let ultimaPrueba = { cuando: 0, hubo: true };
+
+  async function comprobarConexion(forzar) {
+    if (!navigator.onLine) {
+      ultimaPrueba = { cuando: Date.now(), hubo: false };
+      pintarConexion();
+      return false;
+    }
+
+    // Una respuesta de hace menos de 15 segundos se reusa: encadenar pruebas
+    // en cada pulsacion gastaria datos del conductor sin decir nada nuevo.
+    if (!forzar && Date.now() - ultimaPrueba.cuando < 15000) return ultimaPrueba.hubo;
+
+    const corte = new AbortController();
+    const reloj = setTimeout(() => corte.abort(), TIEMPO_PRUEBA_MS);
+    let hubo = false;
+    try {
+      await fetch(`${CONFIG.SUPABASE_URL}/functions/v1/sicov-alistar/formulario`, {
+        method: "HEAD",
+        cache: "no-store",
+        signal: corte.signal,
+      });
+      hubo = true;
+    } catch (_) {
+      // Abortado por tiempo, DNS caido, portal cautivo que corta la conexion:
+      // desde aqui todos significan lo mismo, que no se puede enviar.
+      hubo = false;
+    } finally {
+      clearTimeout(reloj);
+    }
+
+    ultimaPrueba = { cuando: Date.now(), hubo };
+    pintarConexion();
+    return hubo;
+  }
+
   function pintarConexion() {
     const cinta = $("cinta-conexion");
     if (!cinta) return;
-    if (navigator.onLine) {
+
+    const sinInterfaz = !navigator.onLine;
+    // Una prueba fallida reciente vale como "sin red" aunque el sistema diga
+    // que hay: es justo el caso del wifi sin salida.
+    const pruebaFallida = !ultimaPrueba.hubo && Date.now() - ultimaPrueba.cuando < 60000;
+
+    if (!sinInterfaz && !pruebaFallida) {
       cinta.hidden = true;
-    } else {
-      cinta.textContent = "Sin conexión — puedes llenar el formulario, pero no enviarlo hasta recuperar señal.";
-      cinta.className = "cinta sinred";
-      cinta.hidden = false;
+      document.documentElement.removeAttribute("data-sinred");
+      return;
     }
+
+    cinta.textContent = sinInterfaz
+      ? "Sin conexión — puedes llenar el formulario, pero no enviarlo hasta recuperar señal."
+      : "La red no responde — puedes seguir llenando; al enviar se vuelve a intentar.";
+    cinta.className = "cinta sinred";
+    cinta.hidden = false;
+    // Marca en la raiz, para que el CSS pueda apagar el boton de envio sin que
+    // cada formulario tenga que enterarse.
+    document.documentElement.dataset.sinred = "si";
   }
 
-  window.addEventListener("online", pintarConexion);
+  // Al volver la interfaz se prueba de verdad: el evento 'online' dispara en
+  // cuanto el wifi engancha, que es antes de que haya salida a internet.
+  window.addEventListener("online", () => comprobarConexion(true));
   window.addEventListener("offline", pintarConexion);
+
+  // Al volver a la app desde segundo plano. El telefono pudo cambiar de red o
+  // perderla mientras estaba guardado en el bolsillo, y ningun evento de los
+  // de arriba dispara en ese caso.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") comprobarConexion(true);
+  });
 
   // -------------------------------------------------------------------------
   // Service worker y versiones
@@ -312,6 +379,9 @@
   // -------------------------------------------------------------------------
 
   pintarConexion();
+  // Una prueba al abrir, sin bloquear el arranque: si la red esta caida, el
+  // conductor lo sabe antes de llenar cuarenta puntos y no al tocar Registrar.
+  comprobarConexion(true);
   registrarServiceWorker();
 
   window.SICOV = {
@@ -325,6 +395,8 @@
     soloDigitos,
     nombreLimpio,
     hayConexion: () => navigator.onLine,
+    /** Prueba la red de verdad contra el servidor. Devuelve una promesa. */
+    comprobarConexion,
     /** Declara como sabe este formulario si tiene trabajo a medias. */
     registrarGuardia(fn) {
       if (typeof fn === "function") hayTrabajoSinGuardar = fn;

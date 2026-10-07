@@ -270,6 +270,122 @@ select {
 .par > label { flex: 1; min-width: 0; }
 @media (max-width: 420px) { .par { flex-direction: column; gap: 0; } }
 
+/* --- Campo con error ---
+   El mensaje va pegado a su campo. Un aviso suelto arriba que dice "faltan
+   datos" obliga a recorrer el formulario buscando cual es. */
+.error-campo {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  font-weight: 550;
+  color: var(--mal);
+}
+.error-campo::before {
+  content: "!";
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px; height: 16px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--mal-claro);
+  color: #fff;
+  font: 700 0.7rem/1 system-ui, sans-serif;
+}
+.error-campo[hidden] { display: none; }
+
+[data-campo][data-error="si"] input,
+[data-campo][data-error="si"] select {
+  border-color: var(--mal-claro);
+  background: var(--mal-suave);
+}
+[data-campo][data-error="si"] input:focus-visible,
+[data-campo][data-error="si"] select:focus-visible {
+  box-shadow: 0 0 0 3px var(--mal-suave);
+}
+
+/* --- Contador de caracteres --- */
+.contador {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  font-size: 0.78rem;
+  color: var(--tenue);
+  font-variant-numeric: tabular-nums;
+}
+.contador[data-cerca="limite"] { color: var(--mal); font-weight: 650; }
+.contador[hidden] { display: none; }
+
+/* --- Panel de pendientes ---
+   Aparece al intentar enviar sin completar. Cada linea lleva a su sitio: con
+   el checklist en acordeon, el punto que falta puede estar dentro de un bloque
+   cerrado, donde no basta con desplazar la pantalla. */
+.pendientes {
+  margin-bottom: 14px;
+  padding: 16px 16px 10px;
+  border: 1px solid var(--mal-borde);
+  border-radius: var(--radio);
+  background: var(--mal-suave);
+  animation: surgir .26s cubic-bezier(.22,.61,.36,1) backwards;
+}
+.pendientes[hidden] { display: none; }
+.pendientes-titulo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--mal);
+}
+.pendientes-icono {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--mal-claro);
+  color: #fff;
+  font: 700 0.78rem/1 system-ui, sans-serif;
+}
+.pendientes-lista { margin: 0; padding: 0; list-style: none; }
+.pendiente {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--mal-borde);
+  background: transparent;
+  color: var(--tinta);
+  font: 500 0.92rem/1.35 system-ui, sans-serif;
+  text-align: left;
+  cursor: pointer;
+}
+.pendientes-lista li:first-child .pendiente { border-top: 0; }
+.pendiente::after {
+  content: " →";
+  color: var(--mal);
+  font-weight: 700;
+}
+.pendiente:active { opacity: 0.6; }
+
+/* Sin red el boton sigue activo -- al tocarlo se vuelve a probar la conexion,
+   que es lo que el conductor quiere hacer -- pero cambia de color para que no
+   prometa un envio inmediato. Pintarlo de gris como uno desactivado seria
+   mentir: diria "no se puede tocar" sobre algo que si responde. */
+[data-sinred="si"] button.primario:not(:disabled) {
+  background: linear-gradient(180deg, #8a93a1 0%, #6f7b8a 100%);
+  box-shadow: none;
+}
+
 /* --- Separador de grupo (formulario de mantenimiento) ---
    Una linea con el nombre del bloque, sin acordeon: el taller llena el
    formulario sentado y en pantalla grande, donde el scroll no estorba. El
@@ -462,13 +578,18 @@ select {
 }
 .item:last-child { margin-bottom: 0; }
 
+/* Se envuelve a proposito. iOS y Android dejan subir el tamano de letra del
+   sistema, y mucho conductor lo tiene arriba; con el texto grande, la fila se
+   parte en dos lineas en vez de aplastar el nombre de la actividad contra los
+   botones, que no pueden encoger porque son el objetivo tactil. */
 .item-fila {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 .item-texto {
-  flex: 1;
+  flex: 1 1 58%;
   min-width: 0;
   font-size: 0.93rem;
   font-weight: 500;
@@ -828,3 +949,96 @@ button.discreto {
 }
 
 [hidden] { display: none !important; }
+
+
+/* ===========================================================================
+   Adaptacion a pantallas
+   ===========================================================================
+   Mobile-first: todo lo de arriba esta pensado para un telefono estrecho, y
+   aqui solo se ajusta lo que se rompe en los extremos.
+
+   Los tamanos reales en los que se usa esto: iPhone SE y Android de gama baja
+   (320-360px), la mayoria de telefonos (375-430px), telefonos grandes y
+   plegables (430-540px), tablets del taller (768px+).
+--------------------------------------------------------------------------- */
+
+/* --- Pantallas muy estrechas (iPhone SE, Android de gama baja: 320-360px) ---
+   Aqui el ancho del texto del checklist es lo que se queda sin sitio, porque
+   los dos botones de 48px no pueden encoger: son el objetivo tactil. Lo que
+   cede es el padding y el tamano de los rotulos, nunca el area de toque. */
+@media (max-width: 374px) {
+  .envoltura { padding: 12px; }
+  .panel { padding: 16px; }
+  .hero { padding: 16px; }
+  .hero h1 { font-size: 1.22rem; }
+  .hero-cifra strong { font-size: 1.7rem; }
+  .bloque-cab { padding: 10px 11px; gap: 8px; }
+  .bloque-nombre { font-size: 0.89rem; }
+  .bloque-interior { padding: 2px 7px 10px; }
+  .item { padding: 6px 6px; }
+  .item-texto { font-size: 0.89rem; }
+  .switch { gap: 6px; }
+  /* El contador del bloque es lo primero que sobra cuando el nombre del grupo
+     no cabe: el mismo dato esta en la cabecera, en grande. */
+  .bloque-cuenta { display: none; }
+}
+
+/* --- Telefonos bajos (y cualquiera en horizontal) ---
+   Con el teclado abierto en una pantalla de 360px de alto, el formulario
+   queda en una franja de unos 180px. La cabecera deja de ocupar sitio. */
+@media (max-height: 560px) {
+  .hero { padding: 14px 16px; margin-bottom: 12px; }
+  .hero-fila { margin-bottom: 12px; }
+  .hero h1 { font-size: 1.15rem; }
+  .hero-cifra strong { font-size: 1.5rem; }
+  .hero-pie { margin-top: 8px; }
+}
+
+/* --- Pantalla grande (tablet del taller, escritorio) ---
+   La columna no se estira: una linea de 900px obliga a mover la cabeza para
+   leerla. Lo que cambia es el aire, no el ancho. */
+@media (min-width: 720px) {
+  .envoltura { padding: 28px 16px; }
+  .hero { padding: 26px 28px; }
+  .hero h1 { font-size: 1.7rem; }
+  .hero-cifra strong { font-size: 2.5rem; }
+  .panel { padding: 24px 26px; }
+  .barra { padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0)); }
+}
+
+/* --- Puntero fino (raton) ---
+   El :active sirve para el dedo; con raton, el estado util es :hover, que en
+   tactil se queda pegado despues de tocar. De ahi el hover:hover. */
+@media (hover: hover) and (pointer: fine) {
+  .bloque-cab:hover { background: var(--fondo); }
+  .switch button:hover { border-color: var(--linea-fuerte); }
+  .todo-bien:hover { background: var(--ok-borde); }
+  button.primario:not(:disabled):hover { filter: brightness(1.06); }
+  .pendiente:hover { color: var(--mal); }
+}
+
+/* --- Seguridad en los bordes de la pantalla ---
+   El notch, la isla dinamica y la barra de gestos de Android. El padding
+   lateral tambien, que en horizontal el notch se come el lado izquierdo. */
+@supports (padding: max(0px)) {
+  .envoltura {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+  .barra {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+}
+
+/* --- Impresion ---
+   Alguna vez alguien imprime la pantalla como respaldo. Sin esto salen el
+   degradado y la barra fija encima del contenido. */
+@media print {
+  .barra, .cinta, .todo-bien { display: none !important; }
+  .hero { background: none; color: var(--tinta); box-shadow: none; border: 1px solid var(--linea); }
+  .hero-rotulo, .hero-pie { color: var(--suave); }
+  .bloque-envoltura { grid-template-rows: 1fr !important; }
+  body { padding-bottom: 0; background: #fff; }
+  .panel, .bloque { box-shadow: none; break-inside: avoid; }
+}

@@ -46,31 +46,43 @@
     <div class="panel">
       <h2>Vehículo y conductor</h2>
 
-      <label>
+      <label data-campo="placa">
         <span class="etiqueta">Placa</span>
-        <select id="placa" required>
+        <select id="placa" required aria-describedby="err-placa">
           <option value="">Selecciona el vehículo…</option>
         </select>
+        <span class="error-campo" id="err-placa" role="alert" hidden></span>
       </label>
 
-      <label>
+      <label data-campo="cedula">
         <span class="etiqueta">Cédula del conductor</span>
-        <input id="cedula" type="text" inputmode="numeric" autocomplete="off"
-               required placeholder="Sin puntos ni espacios">
+        <!-- inputmode numeric y pattern: en iOS abre el teclado de numeros sin
+             convertir el campo en type=number, que admite signos y notacion
+             cientifica y deja el valor vacio si el texto no es un numero. -->
+        <input id="cedula" type="text" inputmode="numeric" pattern="[0-9]*"
+               autocomplete="off" autocapitalize="off" autocorrect="off"
+               spellcheck="false" enterkeyhint="next" maxlength="10"
+               required aria-describedby="err-cedula pista-conductor"
+               placeholder="Sin puntos ni espacios">
         <span class="pista" id="pista-conductor"></span>
+        <span class="error-campo" id="err-cedula" role="alert" hidden></span>
       </label>
 
       <!-- readonly: el nombre lo pone la nomina, no el conductor. Sirve para
            que confirme que es el, no para aportar el dato. -->
-      <label>
+      <label data-campo="nombre">
         <span class="etiqueta">Nombre del conductor</span>
         <input id="nombre" type="text" autocomplete="off" required readonly
-               placeholder="Se completa con la cédula">
+               tabindex="-1" placeholder="Se completa con la cédula">
       </label>
 
-      <label>
+      <label data-campo="kilometraje">
         <span class="etiqueta">Kilometraje <span class="pista enlinea">(opcional)</span></span>
-        <input id="kilometraje" type="text" inputmode="numeric" autocomplete="off">
+        <input id="kilometraje" type="text" inputmode="numeric" pattern="[0-9]*"
+               autocomplete="off" autocapitalize="off" autocorrect="off"
+               spellcheck="false" enterkeyhint="done" maxlength="9"
+               aria-describedby="err-kilometraje">
+        <span class="error-campo" id="err-kilometraje" role="alert" hidden></span>
       </label>
     </div>
 
@@ -86,10 +98,23 @@
     <div class="panel">
       <h2>Observaciones</h2>
       <label>
-        <textarea id="observaciones" placeholder="Algo más que deba quedar registrado (opcional)"></textarea>
+        <textarea id="observaciones" maxlength="500" enterkeyhint="done"
+                  placeholder="Algo más que deba quedar registrado (opcional)"></textarea>
+        <span class="contador" id="cuenta-obs" aria-live="polite"></span>
       </label>
     </div>
   </form>
+
+  <!-- Lo que falta, en una lista donde cada punto lleva a su sitio. Un aviso
+       suelto arriba obliga a buscar a mano cual de los cuarenta y tantos
+       campos es el que reclama. -->
+  <div class="pendientes" id="pendientes" hidden>
+    <p class="pendientes-titulo">
+      <span class="pendientes-icono" aria-hidden="true">!</span>
+      <span id="pendientes-titulo-texto">Falta completar</span>
+    </p>
+    <ul class="pendientes-lista" id="pendientes-lista"></ul>
+  </div>
 
   <p class="pie">SICOV · <span id="version">…</span></p>
 </div>
