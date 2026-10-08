@@ -41,6 +41,8 @@
      un "crei que lo habia enviado".
 --------------------------------------------------------------------------- */
 
+// 1.10.1 -- la portada apaga mantenimiento mientras falte la configuracion, en vez de llevar al taller a una pantalla que dice que no esta listo
+//
 // 1.10.0 -- letra mas grande y contraste que cumple AA: lo leen conductores adultos de pie y a contraluz
 //
 // 1.9.1 -- el aviso de configuracion pendiente deja de nombrar la constante y el archivo: lo lee el taller, no quien puede arreglarlo
@@ -104,7 +106,7 @@
 // 'sicov-v' anteriores, y con ellos la respuesta guardada de /formulario, que
 // en los moviles ya instalados todavia contiene las 298 cedulas con nombre.
 // Sin este cambio de version esa copia se quedaria en el telefono.
-const VERSION = "1.10.0";
+const VERSION = "1.10.1";
 
 const CACHE = `sicov-v${VERSION}`;
 

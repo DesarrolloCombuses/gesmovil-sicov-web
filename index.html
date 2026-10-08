@@ -41,10 +41,13 @@
       </div>
       <span class="flecha" aria-hidden="true">›</span>
     </a>
-    <a class="opcion" href="./mantenimiento.html">
+    <a class="opcion" href="./mantenimiento.html" id="op-mantenimiento">
       <div>
-        <strong>Registrar mantenimiento</strong>
-        <span>Trabajos ejecutados sobre la flota. Requiere iniciar sesión.</span>
+        <strong>
+          Registrar mantenimiento
+          <span class="etiqueta-estado" id="estado-mantenimiento" hidden>No disponible</span>
+        </strong>
+        <span id="nota-mantenimiento">Trabajos ejecutados sobre la flota. Requiere iniciar sesión.</span>
       </div>
       <span class="flecha" aria-hidden="true">›</span>
     </a>
@@ -72,6 +75,30 @@
 
 <script src="./assets/comun.js"></script>
 <script>
+// --- Mantenimiento: disponible solo si la app esta configurada ---------------
+//
+// No es una bandera que alguien tenga que acordarse de cambiar: se deriva de la
+// propia configuracion. Mientras la anon key siga siendo el marcador de
+// posicion, el modulo no puede iniciar sesion, asi que la opcion se apaga; el
+// dia que se configure, se enciende sola sin tocar este archivo.
+//
+// Vale la pena apagarla aqui y no solo dentro: llevar al taller a una pantalla
+// que dice "no esta configurada" le hace recorrer el camino para nada.
+(function () {
+  const { CONFIG, $ } = window.SICOV;
+  if (CONFIG.SUPABASE_ANON_KEY !== "PEGAR_AQUI_LA_ANON_KEY") return;
+
+  const op = $("op-mantenimiento");
+  op.removeAttribute("href");          // sin href no navega
+  op.setAttribute("role", "link");
+  op.setAttribute("aria-disabled", "true");
+  op.dataset.deshabilitado = "si";
+
+  $("estado-mantenimiento").hidden = false;
+  $("nota-mantenimiento").textContent =
+    "Todavía en configuración. El alistamiento diario sí está disponible.";
+})();
+
 // El navegador avisa cuando la app se puede instalar, y solo entonces: el
 // boton no se muestra si ya esta instalada o si el navegador no lo soporta,
 // para no ofrecer algo que no va a funcionar.

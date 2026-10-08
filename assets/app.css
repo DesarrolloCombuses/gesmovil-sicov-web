@@ -1162,9 +1162,43 @@ button.discreto {
 }
 .opcion:active { transform: scale(0.99); }
 .opcion > div { flex: 1; min-width: 0; }
-.opcion strong { display: block; font-size: 1.08rem; font-weight: 700; margin-bottom: 5px; }
-.opcion span { color: var(--suave); font-size: 0.9rem; line-height: 1.45; }
+.opcion strong {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+.opcion span { color: var(--suave); font-size: 0.98rem; line-height: 1.45; }
 .opcion .flecha { color: var(--tenue); font-size: 1.3rem; flex-shrink: 0; }
+
+/* --- Opcion no disponible ---
+   Apagada, pero legible. Un bloque tan atenuado que no se lee obliga a tocarlo
+   para averiguar por que no sirve, que es justo lo que se quiere evitar: el
+   texto de debajo explica el motivo y tiene que poder leerse. */
+.opcion[data-deshabilitado="si"] {
+  background: var(--fondo);
+  border-style: dashed;
+  box-shadow: none;
+  cursor: default;
+}
+.opcion[data-deshabilitado="si"]:active { transform: none; }
+.opcion[data-deshabilitado="si"] strong { color: var(--suave); }
+.opcion[data-deshabilitado="si"] .flecha { visibility: hidden; }
+
+.etiqueta-estado {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--linea);
+  color: var(--suave);
+  font: 700 0.72rem/1.4 system-ui, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.etiqueta-estado[hidden] { display: none; }
 
 /* Quien fija "reducir movimiento" no quiere transiciones, ni aqui ni en
    ningun otro sitio. */
